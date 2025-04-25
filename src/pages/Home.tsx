@@ -1,8 +1,11 @@
 import { Banner } from '../components/Banner'
 import { SearchBar } from '../components/SearchBar'
 import { CategoryGrid } from '../components/CategoryGrid'
+import { AuthOverlay } from '../components/AuthOverlay'
+import { useState } from 'react'
 
 export const Home = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const categories = [
     { name: 'Burger', image: '/burgerfeast.webp' },
     { name: 'Rice items', image: '/pizzaparty.jpg' },
@@ -30,7 +33,7 @@ export const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="m-4">
-      <Banner banners={banners} />
+        <Banner banners={banners} />
 
         <div className="mt-4">
           <SearchBar />
@@ -38,6 +41,22 @@ export const Home = () => {
 
         <CategoryGrid categories={categories} />
       </div>
+
+      {!isAuthenticated && (
+        <AuthOverlay
+          onGoogleSignIn={() => {
+            setIsAuthenticated(true)
+          }}
+          onAppleSignIn={() => {
+            setIsAuthenticated(true)
+          }}
+          onPhoneSignIn={(phone) => {
+            // Here you would typically verify the OTP
+            // For now, we'll just close the overlay
+            setIsAuthenticated(true)
+          }}
+        />
+      )}
     </div>
   )
 }
