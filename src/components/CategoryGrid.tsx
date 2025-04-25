@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router-dom'
+
 interface Category {
   name: string
   image: string
@@ -8,6 +10,8 @@ interface CategoryGridProps {
 }
 
 export const CategoryGrid = ({ categories }: CategoryGridProps) => {
+  const navigate = useNavigate()
+
   return (
     <section className="mt-4 mx-2">
       <h2 className="text-xl font-semibold">All Categories</h2>
@@ -17,7 +21,11 @@ export const CategoryGrid = ({ categories }: CategoryGridProps) => {
       
       <div className="grid grid-cols-2 gap-4">
         {categories.map((category) => (
-          <div key={category.name} className="relative overflow-hidden rounded-xl shadow-sm bg-white h-36">
+          <div 
+            key={category.name} 
+            className="relative overflow-hidden rounded-xl shadow-sm bg-white h-36 cursor-pointer"
+            onClick={() => navigate(`/category/${category.name.toLowerCase()}`)}
+          >
             <img 
               src={category.image} 
               alt={category.name}

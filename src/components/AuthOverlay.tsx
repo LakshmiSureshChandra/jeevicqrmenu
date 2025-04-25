@@ -58,7 +58,6 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
       
       <div className="relative bg-white rounded-2xl w-[90%] max-w-md p-6 space-y-6">
-        <h2 className="text-2xl font-semibold text-center">Welcome to Jeevic</h2>
         
         <div className="space-y-4">
           {!showOTP ? (
@@ -129,7 +128,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             </div>
           )}
           
-          <p className="text-sm text-center text-gray-500">
+          <p className="text-[12px] text-center text-gray-500">
             By clicking continue you agree to our{' '}
             <a href="#" className="text-orange-500">
               Terms & Conditions

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import './styles/global.css'
 import { Home } from './pages/Home'
+import { CategoryPage } from './pages/CategoryPage'
 
 function App() {
   const [isMobile, setIsMobile] = useState(false)
@@ -36,7 +37,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Home />} />
-        {/* Add more routes here as needed */}
+        <Route path="/category/:category" element={<CategoryPage />} />
       </Routes>
     </Router>
   )
