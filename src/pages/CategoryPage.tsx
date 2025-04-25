@@ -141,7 +141,7 @@ export const CategoryPage = () => {
         
         {/* Scrollable Categories */}
         <div className="mt-4 -mx-4 px-4">
-          <div className="flex gap-8 overflow-x-auto overflow-y-hidden pb-3 scrollbar-hide border-b border-gray-200">
+          <div className="flex gap-8 overflow-x-auto overflow-y-hidden pb-3 scrollbar-hide border-b border-gray-200 no-scrollbar">
             {categories.map((cat) => (
               <button
                 key={cat.name}
@@ -208,12 +208,12 @@ export const CategoryPage = () => {
               <img src="/spoonandfork.png" alt="" className="w-6 h-6" />
               <div>
                 <div className="font-medium">{itemNames}</div>
-                <div className="text-sm text-white/80">+ {totalItems} more Items</div>
+                <div className="bg-gray-700/20 rounded-full pl-2 items-center flex justify-start text-[10px] text-white/80">+ {totalItems} more Items</div>
               </div>
             </div>
             <button 
-              onClick={() => navigate('/checkout')}
-              className="bg-white text-orange-500 px-4 py-2 rounded-full font-medium flex items-center gap-2"
+              onClick={() => navigate('/checkout', { state: { items: cartItems } })}
+              className="bg-white text-orange-500 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2"
             >
               Proceed to Order
               <span className="text-xl">→</span>

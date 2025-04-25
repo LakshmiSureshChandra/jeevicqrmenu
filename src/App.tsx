@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import './styles/global.css'
 import { Home } from './pages/Home'
 import { CategoryPage } from './pages/CategoryPage'
+import { CheckoutPage } from './pages/CheckoutPage'
 
 function App() {
   const [isMobile, setIsMobile] = useState(false)
@@ -38,6 +39,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/category/:category" element={<CategoryPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
       </Routes>
     </Router>
   )
