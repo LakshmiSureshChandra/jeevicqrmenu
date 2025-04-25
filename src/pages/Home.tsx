@@ -5,6 +5,7 @@ import { AuthOverlay } from '../components/AuthOverlay'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from'react'
+import { motion } from 'framer-motion'
 
 export const Home = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -41,15 +42,37 @@ export const Home = () => {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gray-50"
+    >
       <div className="m-4">
-        <Banner banners={banners} />
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <Banner banners={banners} />
+        </motion.div>
 
-        <div className="mt-4">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.5 }}
+          className="mt-4"
+        >
           <SearchBar />
-        </div>
+        </motion.div>
 
-        <CategoryGrid categories={categories} />
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+        >
+          <CategoryGrid categories={categories} />
+        </motion.div>
       </div>
 
       {/* Floating Action Button - Only show when there's an active order */}
@@ -86,6 +109,6 @@ export const Home = () => {
           }}
         />
       )}
-    </div>
+    </motion.div>
   )
 }

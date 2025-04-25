@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { SearchBar } from '../components/SearchBar'
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 interface MenuItem {
   id: string
@@ -142,12 +143,22 @@ export const CategoryPage = () => {
     : ''
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 relative">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+      className="min-h-screen bg-gray-50 pb-24 relative"
+    >
       <div className="sticky top-0 bg-gray-50 z-10 px-4 py-3">
         <SearchBar />
         
         {/* Scrollable Categories */}
-        <div className="mt-4 -mx-4 px-4">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+          className="mt-4 -mx-4 px-4"
+        >
           <div className="flex gap-8 overflow-x-auto overflow-y-hidden pb-3 scrollbar-hide border-b border-gray-200 no-scrollbar">
             {categories.map((cat) => (
               <button
@@ -170,14 +181,25 @@ export const CategoryPage = () => {
               </button>
             ))}
           </div>
-        </div>
+          </motion.div>
       </div>
 
       {/* Rest of the content */}
-      <div className="p-4">
+      <motion.div 
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.4, duration: 0.5 }}
+        className="p-4"
+      >
         <div className="grid grid-cols-2 gap-4">
-          {filteredItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-2xl p-4 flex flex-col">
+          {filteredItems.map((item, index) => (
+            <motion.div 
+              key={item.id} 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 * index, duration: 0.5 }}
+              className="bg-white rounded-2xl p-4 flex flex-col"
+            >
               <div className="relative">
                 <img 
                   src={item.image} 
@@ -203,10 +225,10 @@ export const CategoryPage = () => {
                   <span className="bg-orange-500 text-white rounded-full w-4 h-4 flex items-center justify-center ml-1 text-sm leading-none">+</span>
                 </button>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {cartItems.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-orange-500 text-white p-4">
@@ -228,6 +250,6 @@ export const CategoryPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
