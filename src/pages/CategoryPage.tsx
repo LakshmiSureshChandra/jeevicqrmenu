@@ -24,7 +24,11 @@ interface CartItem extends MenuItem {
 export const CategoryPage = () => {
   const { category } = useParams()
   const navigate = useNavigate()
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
+  // Initialize cartItems with items from localStorage if they exist
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const savedCart = localStorage.getItem('cartItems')
+    return savedCart ? JSON.parse(savedCart) : []
+  })
   
   // This would typically come from an API
   const categories: Category[] = [
@@ -118,14 +122,17 @@ export const CategoryPage = () => {
   const addToCart = (item: MenuItem) => {
     setCartItems(prev => {
       const existingItem = prev.find(i => i.id === item.id)
-      if (existingItem) {
-        return prev.map(i => 
-          i.id === item.id 
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        )
-      }
-      return [...prev, { ...item, quantity: 1 }]
+      const newCart = existingItem
+        ? prev.map(i => 
+            i.id === item.id 
+              ? { ...i, quantity: i.quantity + 1 }
+              : i
+          )
+        : [...prev, { ...item, quantity: 1 }]
+      
+      // Save to localStorage after updating
+      localStorage.setItem('cartItems', JSON.stringify(newCart))
+      return newCart
     })
   }
 

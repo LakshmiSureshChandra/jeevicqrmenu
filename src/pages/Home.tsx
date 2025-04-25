@@ -3,9 +3,12 @@ import { SearchBar } from '../components/SearchBar'
 import { CategoryGrid } from '../components/CategoryGrid'
 import { AuthOverlay } from '../components/AuthOverlay'
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useEffect } from'react'
 
 export const Home = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const navigate = useNavigate()
   const categories = [
     { name: 'Burger', image: '/burgerfeast.webp' },
     { name: 'Rice items', image: '/pizzaparty.jpg' },
@@ -29,6 +32,13 @@ export const Home = () => {
     },
     // Add more banners as needed
   ]
+  const [savedOrders, setSavedOrders] = useState<any[][]>([])
+  const [hasActiveOrder, setHasActiveOrder] = useState(false)
+
+  useEffect(() => {
+    const currentOrder = localStorage.getItem('currentOrder')
+    setHasActiveOrder(!!currentOrder)
+  }, [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -42,6 +52,27 @@ export const Home = () => {
         <CategoryGrid categories={categories} />
       </div>
 
+      {/* Floating Action Button - Only show when there's an active order */}
+      {hasActiveOrder && (
+        <button
+          onClick={() => {
+            const currentOrder = localStorage.getItem('currentOrder')
+            if (currentOrder) {
+              const items = JSON.parse(currentOrder)
+              navigate('/checkout', { state: { items, directConfirm: true } })
+            }
+          }}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-orange-500 rounded-full shadow-lg flex items-center justify-center"
+        >
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-sm">
+            !
+          </div>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+            <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        </button>
+      )}
+
       {!isAuthenticated && (
         <AuthOverlay
           onGoogleSignIn={() => {
@@ -51,8 +82,6 @@ export const Home = () => {
             setIsAuthenticated(true)
           }}
           onPhoneSignIn={(phone) => {
-            // Here you would typically verify the OTP
-            // For now, we'll just close the overlay
             setIsAuthenticated(true)
           }}
         />
