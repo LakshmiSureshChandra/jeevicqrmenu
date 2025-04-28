@@ -33,7 +33,6 @@ export const Home = () => {
     },
     // Add more banners as needed
   ]
-  const [savedOrders, setSavedOrders] = useState<any[][]>([])
   const [hasActiveOrder, setHasActiveOrder] = useState(false)
 
   useEffect(() => {
@@ -104,7 +103,7 @@ export const Home = () => {
           onAppleSignIn={() => {
             setIsAuthenticated(true)
           }}
-          onPhoneSignIn={(phone) => {
+          onPhoneSignIn={() => {
             setIsAuthenticated(true)
           }}
         />

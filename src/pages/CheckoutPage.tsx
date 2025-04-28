@@ -19,7 +19,7 @@ export const CheckoutPage = () => {
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
   const [tempInstructions, setTempInstructions] = useState('')
   const [showNotification, setShowNotification] = useState(false)
-  const [savedOrders, setSavedOrders] = useState<OrderItem[][]>([])
+  const [, setSavedOrders] = useState<OrderItem[][]>([])
 
   useEffect(() => {
     // Load saved orders from localStorage when component mounts
