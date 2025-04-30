@@ -2,6 +2,8 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+import { useOrderStatus } from '../contexts/OrderContext'
+
 interface OrderItem {
   id: string
   name: string
@@ -14,6 +16,7 @@ interface OrderItem {
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const { orderStatus, setOrderStatus } = useOrderStatus() // Add this line to use the context
   const [orderItems, setOrderItems] = useState<OrderItem[]>(location.state?.items || [])
   const [isOrderConfirmed, setIsOrderConfirmed] = useState(location.state?.directConfirm || false)
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
@@ -34,7 +37,7 @@ export const CheckoutPage = () => {
       setExpandedItemId(null)
     } else {
       setExpandedItemId(itemId)
-      const item = orderItems.find(i => i.id === itemId)
+      const item = orderItems.find((item: OrderItem) => item.id === itemId)
       setTempInstructions(item?.instructions || '')
     }
   }
@@ -90,22 +93,34 @@ export const CheckoutPage = () => {
     const existingOrder = localStorage.getItem('currentOrder')
     const existingItems = existingOrder ? JSON.parse(existingOrder) : []
     
-    // Merge items with same ID by adding quantities
-    const mergedItems = [...existingItems]
+    // Create a map to track items by ID
+    const itemMap = new Map()
+    
+    // First, add existing items to the map
+    existingItems.forEach((item: OrderItem) => {
+      itemMap.set(item.id, item)
+    })
+    
+    // Then merge new items, adding quantities if item exists
     orderItems.forEach(newItem => {
-      const existingItemIndex = mergedItems.findIndex(item => item.id === newItem.id)
-      if (existingItemIndex >= 0) {
-        mergedItems[existingItemIndex].quantity += newItem.quantity
+      const existingItem = itemMap.get(newItem.id)
+      if (existingItem) {
+        existingItem.quantity += newItem.quantity
       } else {
-        mergedItems.push({...newItem})
+        itemMap.set(newItem.id, {...newItem})
       }
     })
     
+    // Convert map values back to array
+    const mergedItems = Array.from(itemMap.values())
+    
     localStorage.setItem('currentOrder', JSON.stringify(mergedItems))
+    setOrderStatus('received')
     setIsOrderConfirmed(true)
-}
+  }
 
   const handleFinishOrder = () => {
+    setOrderStatus('preparing') // Add this line to update order status
     setIsFinished(true)
   }
 
@@ -176,17 +191,31 @@ export const CheckoutPage = () => {
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <div className="flex-1 p-4 space-y-6">
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                <path d="M20 6L9 17l-5-5"/>
-              </svg>
-            </div>
+            {orderStatus === 'received' ? (
+              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                  <path d="M20 6L9 17l-5-5"/>
+                </svg>
+              </div>
+            ) : orderStatus === 'preparing' ? (
+              <div className="w-16 h-16 flex items-center justify-center">
+                <img 
+                  src="/orderpreparing.png" 
+                  alt="Preparing Order" 
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+            ) : null}
           </div>
           
           <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-gray-800">Order Recieved</h1>
+            <h1 className="text-2xl font-semibold text-gray-800">
+              {orderStatus === 'received' ? 'Order Received' : 'Preparing Your Order'}
+            </h1>
             <p className="text-gray-600">
-              Your Order has been recieved and our chefs will start preparing your order soon!
+              {orderStatus === 'received' 
+                ? 'Your Order has been received and our chefs will start preparing your order soon!'
+                : 'Our chefs are working on your delicious order. It will be ready soon!'}
             </p>
           </div>
 
@@ -319,7 +348,7 @@ export const CheckoutPage = () => {
                   className="w-16 h-16 rounded-2xl object-cover"
                 />
                 <div className="flex-1">
-                  <div className="flex flex-col">
+                  <div className="flex-col">
                     <h3 className="font-medium text-[15px] text-gray-800">{item.name}</h3>
                     <div className="flex items-center gap-1 mt-1">
                       <span className="text-orange-500 text-sm">★</span>

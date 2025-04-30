@@ -4,6 +4,7 @@ import './styles/global.css'
 import { Home } from './pages/Home'
 import { CategoryPage } from './pages/CategoryPage'
 import { CheckoutPage } from './pages/CheckoutPage'
+import { OrderProvider } from './contexts/OrderContext'
 
 function App() {
   const [isMobile, setIsMobile] = useState(false)
@@ -35,13 +36,15 @@ function App() {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/category/:category" element={<CategoryPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-      </Routes>
-    </Router>
+    <OrderProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/category/:category" element={<CategoryPage />} />
+          <Route path="/checkout" element={<CheckoutPage />} />
+        </Routes>
+      </Router>
+    </OrderProvider>
   )
 }
 
