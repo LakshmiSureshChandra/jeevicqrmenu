@@ -108,7 +108,7 @@ export const Home = () => {
           )}
           
           {/* Side Button */}
-          <div className="fixed right-0 top-[27%] -translate-y-1/2 flex items-center z-50">
+          <div className="fixed right-0 top-[35%] -translate-y-1/2 flex items-center z-50">
             <button
               onClick={() => setShowOrderStatus(true)}
               className="flex items-center bg-white rounded-l-full py-2 pl-2 pr-3 shadow-lg"
