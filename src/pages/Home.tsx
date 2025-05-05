@@ -4,7 +4,7 @@ import { CategoryGrid } from '../components/CategoryGrid'
 import { AuthOverlay } from '../components/AuthOverlay'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from'react'
+import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
 
@@ -63,7 +63,7 @@ export const Home = () => {
   }, [orderStatus]) // Add orderStatus as a dependency to re-fetch when it changes
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -78,7 +78,7 @@ export const Home = () => {
           <Banner banners={banners} />
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
@@ -101,50 +101,49 @@ export const Home = () => {
         <>
           {/* Semi-transparent overlay when drawer is open */}
           {showOrderStatus && (
-            <div 
+            <div
               className="fixed inset-0 bg-black/30 z-40"
               onClick={() => setShowOrderStatus(false)}
             />
           )}
-          
+
           {/* Side Button */}
           <div className="fixed right-0 top-[35%] -translate-y-1/2 flex items-center z-50">
             <button
               onClick={() => setShowOrderStatus(true)}
-              className="flex items-center bg-white rounded-l-full py-2 pl-2 pr-3 shadow-lg"
+              className="flex items-center bg-white rounded-l-full py-2 pl-3 pr-4 shadow-lg" // Increased padding
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3"> {/* Increased gap */}
                 {/* Left Arrow Icon */}
-                <svg 
-                  className="w-4 h-4" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
+                <svg
+                  className="w-5 h-5" // Increased icon size
+                  viewBox="0 0 24 24"
+                  fill="none"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path 
-                    d="M15 18L9 12L15 6" 
-                    stroke="#FF6B00" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
+                  <path
+                    d="M15 18L9 12L15 6"
+                    stroke="#FF6B00"
+                    strokeWidth="2"
+                    strokeLinecap="round"
                     strokeLinejoin="round"
                   />
                 </svg>
-                
-                {/* Custom Image Placeholder - Replace src with your image */}
-                <img 
-                  src="/orderstatus.png" 
-                  alt="Order Status" 
-                  className="w-8 h-8 object-contain"
+
+                {/* Custom Image Placeholder */}
+                <img
+                  src="/orderstatus.png"
+                  alt="Order Status"
+                  className="w-10 h-10 object-contain" // Increased image size
                 />
               </div>
             </button>
           </div>
 
           {/* Order Status Drawer */}
-          <div 
-            className={`fixed right-0 top-[20%] w-[90%] max-w-sm bg-white shadow-lg rounded-l-2xl z-50 transform transition-transform duration-300 ease-in-out h-[70vh] ${
-              showOrderStatus ? 'translate-x-0' : 'translate-x-full'
-            }`}
+          <div
+            className={`fixed right-0 top-[20%] w-[90%] max-w-sm bg-white shadow-lg rounded-l-2xl z-50 transform transition-transform duration-300 ease-in-out h-[70vh] ${showOrderStatus ? 'translate-x-0' : 'translate-x-full'
+              }`}
           >
             <div className="p-4 h-full flex flex-col">
               <div className="flex items-center justify-center mb-4">
@@ -152,14 +151,14 @@ export const Home = () => {
                   {orderStatus === 'received' ? (
                     <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-2">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                        <path d="M20 6L9 17l-5-5"/>
+                        <path d="M20 6L9 17l-5-5" />
                       </svg>
                     </div>
                   ) : (
                     <div className="w-16 h-16 flex items-center justify-center mb-2">
-                      <img 
-                        src="/orderpreparing.png" 
-                        alt="Preparing Order" 
+                      <img
+                        src="/orderpreparing.png"
+                        alt="Preparing Order"
                         className="w-16 h-16 object-contain"
                       />
                     </div>
@@ -168,7 +167,7 @@ export const Home = () => {
                     {orderStatus === 'received' ? 'Order Received' : 'Preparing'}
                   </h3>
                   <p className="text-center text-sm text-gray-600 mt-1">
-                    {orderStatus === 'received' 
+                    {orderStatus === 'received'
                       ? 'Your order has been received and will be delivered soon!'
                       : 'Your order has been received and our chefs will start preparing your order soon!'}
                   </p>
@@ -204,14 +203,14 @@ export const Home = () => {
               </div>
 
               {/* Finish Order Button */}
-              <button 
+              <button
                 onClick={() => {
-                  navigate('/checkout', { 
-                    state: { 
+                  navigate('/checkout', {
+                    state: {
                       items: orderItems, // Use orderItems from state instead of re-fetching
-                      directConfirm: true, 
-                      showRating: true 
-                    } 
+                      directConfirm: true,
+                      showRating: true
+                    }
                   })
                 }}
                 className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium mt-4"
@@ -232,14 +231,14 @@ export const Home = () => {
           }}
           className="w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center shadow-lg hover:bg-orange-600 transition-colors"
         >
-          <svg 
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="white" 
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
             strokeWidth="2"
-            strokeLinecap="round" 
+            strokeLinecap="round"
             strokeLinejoin="round"
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -250,7 +249,7 @@ export const Home = () => {
       {/* Notification Toast */}
       <AnimatePresence>
         {showNotification && (
-          <motion.div 
+          <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}

@@ -3,7 +3,7 @@ import { FC, useState, useEffect } from 'react'
 interface AuthOverlayProps {
   onGoogleSignIn: () => void
   onAppleSignIn: () => void
-  onPhoneSignIn: (phone: string) => void
+  onPhoneSignIn: (userData: { phone: string, firstName: string, lastName: string }) => void
 }
 
 export const AuthOverlay: FC<AuthOverlayProps> = ({
@@ -12,8 +12,11 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
   onPhoneSignIn
 }) => {
   const [showOTP, setShowOTP] = useState(false)
+  const [showNameForm, setShowNameForm] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [otp, setOTP] = useState('')
+  const [otp, setOTP] = useState(['', '', '', ''])
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [selectedCountry, setSelectedCountry] = useState({ code: '+91', flag: '🇮🇳' })
   const [showCountryList, setShowCountryList] = useState(false)
 
@@ -26,11 +29,43 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
 
   const handleContinue = () => {
     if (!showOTP) {
-      // Show OTP input
       setShowOTP(true)
+    } else if (showOTP && !showNameForm) {
+      setShowNameForm(true)
     } else {
-      // Verify OTP and close
-      onPhoneSignIn(phoneNumber)
+      // Submit all user data
+      onPhoneSignIn({
+        phone: `${selectedCountry.code}${phoneNumber}`,
+        firstName: firstName.trim(),
+        lastName: lastName.trim()
+      })
+    }
+  }
+
+  const handleOTPChange = (index: number, value: string) => {
+    if (value.length > 1) value = value[0]
+    if (!/^\d*$/.test(value)) return
+
+    const newOTP = [...otp]
+    newOTP[index] = value
+    setOTP(newOTP)
+
+    // Auto focus next input
+    if (value && index < 3) {
+      const nextInput = document.querySelector(`input[name='otp-${index + 1}']`) as HTMLInputElement
+      if (nextInput) nextInput.focus()
+    }
+  }
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      const prevInput = document.querySelector(`input[name='otp-${index - 1}']`) as HTMLInputElement
+      if (prevInput) {
+        prevInput.focus()
+        const newOTP = [...otp]
+        newOTP[index - 1] = ''
+        setOTP(newOTP)
+      }
     }
   }
 
@@ -56,13 +91,13 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-      
+
       <div className="relative bg-white rounded-2xl w-[90%] max-w-md p-6 space-y-6">
-        
+
         <div className="space-y-4">
           {!showOTP ? (
             <div className="flex items-center border rounded-xl p-3 gap-2 relative">
-              <div 
+              <div
                 className="flex items-center gap-1 cursor-pointer"
                 onClick={() => setShowCountryList(!showCountryList)}
               >
@@ -77,7 +112,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 maxLength={10}
               />
-              
+
               {/* Country selection dropdown */}
               {showCountryList && (
                 <div className="absolute left-0 top-full mt-1 bg-white border rounded-xl shadow-lg max-h-48 overflow-y-auto w-48 z-50">
@@ -98,20 +133,46 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                 </div>
               )}
             </div>
+          ) : showNameForm ? (
+            <div className="space-y-3">
+              <p className="text-center text-gray-600">
+                Please enter your name
+              </p>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="First Name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full border rounded-xl p-3 outline-none"
+                />
+                <input
+                  type="text"
+                  placeholder="Last Name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full border rounded-xl p-3 outline-none"
+                />
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               <p className="text-center text-gray-600">
                 Enter the 4-digit code sent to {selectedCountry.code} {phoneNumber}
               </p>
               <div className="flex justify-center gap-2">
-                <input
-                  type="text"
-                  maxLength={4}
-                  className="w-32 text-center border rounded-xl p-3 outline-none"
-                  placeholder="Enter OTP"
-                  value={otp}
-                  onChange={(e) => setOTP(e.target.value.replace(/\D/g, ''))}
-                />
+                {otp.map((digit, index) => (
+                  <input
+                    key={index}
+                    type="text"
+                    name={`otp-${index}`}
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOTPChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    className="w-12 h-12 text-center border rounded-xl outline-none text-lg"
+                  />
+                ))}
               </div>
               <div className="text-center">
                 {timer > 0 ? (
@@ -127,7 +188,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
               </div>
             </div>
           )}
-          
+
           <p className="text-[12px] text-center text-gray-500">
             By clicking continue you agree to our{' '}
             <a href="#" className="text-orange-500">
@@ -135,15 +196,16 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             </a>
           </p>
 
-          <button 
+          <button
             className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium"
             onClick={handleContinue}
+            disabled={showNameForm && (!firstName.trim() || !lastName.trim())}
           >
-            {showOTP ? 'Confirm' : 'Continue'}
+            {showNameForm ? 'Submit' : showOTP ? 'Confirm' : 'Continue'}
           </button>
         </div>
 
-        {!showOTP && (
+        {!showOTP && !showNameForm && (
           <>
             <div className="flex items-center gap-4">
               <div className="h-px flex-1 bg-gray-200" />
@@ -152,7 +214,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             </div>
 
             <div className="space-y-3">
-              <button 
+              <button
                 onClick={onAppleSignIn}
                 className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl"
               >
@@ -160,7 +222,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                 <span>Continue with Apple</span>
               </button>
 
-              <button 
+              <button
                 onClick={onGoogleSignIn}
                 className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl"
               >
