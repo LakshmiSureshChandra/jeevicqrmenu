@@ -1,14 +1,10 @@
 import { FC, useState, useEffect } from 'react'
 
 interface AuthOverlayProps {
-  onGoogleSignIn: () => void
-  onAppleSignIn: () => void
   onPhoneSignIn: (userData: { phone: string, firstName: string, lastName: string }) => void
 }
 
 export const AuthOverlay: FC<AuthOverlayProps> = ({
-  onGoogleSignIn,
-  onAppleSignIn,
   onPhoneSignIn
 }) => {
   const [showOTP, setShowOTP] = useState(false)
@@ -204,34 +200,6 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             {showNameForm ? 'Submit' : showOTP ? 'Confirm' : 'Continue'}
           </button>
         </div>
-
-        {!showOTP && !showNameForm && (
-          <>
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-gray-200" />
-              <span className="text-gray-400">or</span>
-              <div className="h-px flex-1 bg-gray-200" />
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={onAppleSignIn}
-                className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl"
-              >
-                <img src="/apple-logo.png" alt="Apple" className="w-5 h-5" />
-                <span>Continue with Apple</span>
-              </button>
-
-              <button
-                onClick={onGoogleSignIn}
-                className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl"
-              >
-                <img src="/google-logo.png" alt="Google" className="w-5 h-5" />
-                <span>Continue with Google</span>
-              </button>
-            </div>
-          </>
-        )}
       </div>
     </div>
   )

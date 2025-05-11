@@ -263,8 +263,6 @@ export const Home = () => {
 
       {!isAuthenticated && (
         <AuthOverlay
-          onGoogleSignIn={() => setIsAuthenticated(true)}
-          onAppleSignIn={() => setIsAuthenticated(true)}
           onPhoneSignIn={() => setIsAuthenticated(true)}
         />
       )}
