@@ -12,6 +12,12 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
   const [showOTP, setShowOTP] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
   const [otp, setOTP] = useState(['', '', '', '', '', '']) // Changed to 6 digits
+  const [bookingDetails] = useState({
+    table_id: '3343434',
+    booking_date: '',
+    booking_time: '',
+    from_time: ''
+  })
 
   useEffect(() => {
     // Check if there's a valid token on mount
@@ -33,13 +39,37 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
         const otpString = otp.join('')
         const response = await cafeAPI.verifyOTP(phoneNumber, otpString)
         if (response.access_token) {
-          onPhoneSignIn({
-            phone: `+91${phoneNumber}`
-          })
+          // OTP verified successfully, now create the booking
+          try {
+            const now = new Date()
+            const formattedDate = now.toISOString().split('T')[0]
+            const formattedTime = now.toISOString().slice(0, 19)
+
+            const bookingResponse = await cafeAPI.createBooking({
+              ...bookingDetails,
+              booking_date: formattedDate,
+              booking_time: formattedTime,
+              from_time: formattedTime
+            })
+            console.log('Booking created:', bookingResponse)
+            
+            // Store the booking ID in local storage
+            if (bookingResponse.success && bookingResponse.data && bookingResponse.data.id) {
+              localStorage.setItem('currentBookingId', bookingResponse.data.id)
+            }
+            
+            onPhoneSignIn({
+              phone: `+91${phoneNumber}`
+            })
+          } catch (bookingError) {
+            console.error('Failed to create booking:', bookingError)
+            // Handle booking creation error (e.g., show an error message to the user)
+          }
         }
       }
     } catch (error) {
       console.error('Authentication error:', error)
+      // Handle authentication error (e.g., show an error message to the user)
     }
   }
 

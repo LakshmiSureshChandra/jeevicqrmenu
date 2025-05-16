@@ -36,10 +36,10 @@ export const Home = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showOrderStatus, setShowOrderStatus] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
-  const [hasActiveOrder] = useState(false)
-  const navigate = useNavigate()
-  const [orderItems] = useState<OrderItem[]>([])
+  const [hasActiveOrder, setHasActiveOrder] = useState(false)
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const { orderStatus } = useOrderStatus()
+  const navigate = useNavigate()
   const { categories, setCategories, setCurrentCategory } = useCategories();
 
   // Fetch categories
@@ -80,6 +80,23 @@ export const Home = () => {
     }
     // Add more banners as needed
   ]
+
+  // Check for active order
+  useEffect(() => {
+    const currentOrder = localStorage.getItem('currentOrder')
+    if (currentOrder) {
+      const parsedOrder = JSON.parse(currentOrder)
+      setOrderItems(parsedOrder)
+      setHasActiveOrder(true)
+    } else {
+      setHasActiveOrder(false)
+    }
+  }, [])
+
+  const handleFinishOrder = () => {
+    navigate('order-confirmation')
+    setShowOrderStatus(false);
+  };
 
   return (
     <motion.div
@@ -122,7 +139,7 @@ export const Home = () => {
         </motion.div>
       </div>
 
-      {/* Order Status Drawer */}
+      {/* Side Button and Order Status Drawer */}
       {hasActiveOrder && (
         <>
           {/* Semi-transparent overlay when drawer is open */}
@@ -137,12 +154,11 @@ export const Home = () => {
           <div className="fixed right-0 top-[35%] -translate-y-1/2 flex items-center z-50">
             <button
               onClick={() => setShowOrderStatus(true)}
-              className="flex items-center bg-white rounded-l-full py-2 pl-3 pr-4 shadow-lg" // Increased padding
+              className="flex items-center bg-white rounded-l-full py-2 pl-3 pr-4 shadow-lg"
             >
-              <div className="flex items-center gap-3"> {/* Increased gap */}
-                {/* Left Arrow Icon */}
+              <div className="flex items-center gap-3">
                 <svg
-                  className="w-5 h-5" // Increased icon size
+                  className="w-5 h-5"
                   viewBox="0 0 24 24"
                   fill="none"
                   xmlns="http://www.w3.org/2000/svg"
@@ -155,12 +171,10 @@ export const Home = () => {
                     strokeLinejoin="round"
                   />
                 </svg>
-
-                {/* Custom Image Placeholder */}
                 <img
                   src="/orderstatus.png"
                   alt="Order Status"
-                  className="w-10 h-10 object-contain" // Increased image size
+                  className="w-10 h-10 object-contain"
                 />
               </div>
             </button>
@@ -168,8 +182,9 @@ export const Home = () => {
 
           {/* Order Status Drawer */}
           <div
-            className={`fixed right-0 top-[20%] w-[90%] max-w-sm bg-white shadow-lg rounded-l-2xl z-50 transform transition-transform duration-300 ease-in-out h-[70vh] ${showOrderStatus ? 'translate-x-0' : 'translate-x-full'
-              }`}
+            className={`fixed right-0 top-[20%] w-[90%] max-w-sm bg-white shadow-lg rounded-l-2xl z-50 transform transition-transform duration-300 ease-in-out h-[70vh] ${
+              showOrderStatus ? 'translate-x-0' : 'translate-x-full'
+            }`}
           >
             <div className="p-4 h-full flex flex-col">
               <div className="flex items-center justify-center mb-4">
@@ -230,15 +245,7 @@ export const Home = () => {
 
               {/* Finish Order Button */}
               <button
-                onClick={() => {
-                  navigate('/checkout', {
-                    state: {
-                      items: orderItems, // Use orderItems from state instead of re-fetching
-                      directConfirm: true,
-                      showRating: true
-                    }
-                  })
-                }}
+                onClick={handleFinishOrder}
                 className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium mt-4"
               >
                 Finish Order

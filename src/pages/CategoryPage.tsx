@@ -65,7 +65,6 @@ export const CategoryPage = () => {
     if (!cartItem) {
       const newCartItems = [...cartItems, { ...item, quantity: 1 }]
       setCartItems(newCartItems)
-      localStorage.setItem('cartItems', JSON.stringify(newCartItems))
     }
   }
 
@@ -79,8 +78,6 @@ export const CategoryPage = () => {
         }
         return item
       }).filter((item): item is CartItem => item !== null)
-
-      localStorage.setItem('cartItems', JSON.stringify(updatedItems))
       return updatedItems
     })
   }
@@ -108,51 +105,68 @@ export const CategoryPage = () => {
   }
 
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchAllData = async () => {
       try {
-        const data = await cafeAPI.getCategories()
-        const formattedData = data.map((cat: any) => ({
-          ...cat,
-          created_at: new Date(cat.created_at),
-          updated_at: new Date(cat.updated_at)
-        }))
-        setCategories(formattedData)
-      } catch (err) {
-        console.error('Error fetching categories:', err)
-      }
-    }
+        // Fetch categories if not already loaded
+        if (categories.length === 0) {
+          const categoryData = await cafeAPI.getCategories();
+          const formattedCategories = categoryData.map((cat: any) => ({
+            ...cat,
+            created_at: new Date(cat.created_at),
+            updated_at: new Date(cat.updated_at)
+          }));
+          setCategories(formattedCategories);
+        }
 
-    const fetchMenuItems = async () => {
-      try {
-        if (category) {
-          const allItems = await cafeAPI.getDishesByCategoryId(category)
-          const menuItems: MenuItem[] = allItems.map(dish => ({
+        // Fetch all dishes
+        const allDishes = await cafeAPI.getDishes();
+        
+        // Group dishes by category and count them
+        const dishCountsByCategory: Record<string, number> = {};
+        const dishesByCategory: Record<string, MenuItem[]> = {};
+        
+        allDishes.forEach((dish: any) => {
+          const categoryId = dish.dish_category_id;
+          
+          // Update counts
+          dishCountsByCategory[categoryId] = (dishCountsByCategory[categoryId] || 0) + 1;
+          
+          // Group dishes
+          if (!dishesByCategory[categoryId]) {
+            dishesByCategory[categoryId] = [];
+          }
+          
+          dishesByCategory[categoryId].push({
             ...dish,
             rating: 5,
             image: dish.picture,
             category: dish.dish_category_id
-          }))
-          setMenuItems(menuItems)
+          });
+        });
 
-          // Update counts for the selected category
-          setCategoryItemCounts(prevCounts => ({
-            ...prevCounts,
-            [category]: menuItems.length
-          }))
+        // Update category counts
+        setCategoryItemCounts(dishCountsByCategory);
+
+        // If we're on a specific category page, set its dishes
+        if (category && dishesByCategory[category]) {
+          setMenuItems(dishesByCategory[category]);
         }
+
+        setLoading(false);
       } catch (err) {
-        console.error('Error fetching menu items:', err)
-      } finally {
-        setLoading(false)
+        console.error('Error fetching data:', err);
+        setLoading(false);
       }
-    }
+    };
 
-    if (categories.length === 0) {
-      fetchCategories()
-    }
-    fetchMenuItems()
-  }, [categories, category])
+    fetchAllData();
+  }, [category, categories.length, setCategories]);
 
+  // Remove these lines as they're now handled in the useEffect
+  // if (categories.length === 0) {
+  //   fetchCategories()
+  // }
+  // fetchMenuItems()
 
   return (
     <motion.div

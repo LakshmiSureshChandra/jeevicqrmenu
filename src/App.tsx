@@ -4,8 +4,9 @@ import './styles/global.css'
 import { Home } from './pages/Home'
 import { CategoryPage } from './pages/CategoryPage'
 import { CheckoutPage } from './pages/CheckoutPage'
+import { OrderConfirmationPage } from './pages/OrderConfirmationPage'  // Add this import
 import { OrderProvider } from './contexts/OrderContext'
-import { CategoryProvider } from './contexts/CategoryContext';
+import { CategoryProvider } from './contexts/CategoryContext'
 
 function App() {
   const [isMobile, setIsMobile] = useState(false)
@@ -44,6 +45,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/category/:category" element={<CategoryPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/order-confirmation" element={<OrderConfirmationPage />} />  // Add this route
           </Routes>
         </Router>
       </CategoryProvider>

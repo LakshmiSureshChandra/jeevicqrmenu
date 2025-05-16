@@ -60,6 +60,16 @@ interface VerifyOTPResponse {
   access_token: string
 }
 
+interface CreateOrderData {
+  table_id: string;
+  booking_id: string;
+  items: Array<{
+    dish_id: string;
+    quantity: number;
+    instructions?: string;
+  }>;
+}
+
 export const cafeAPI = {
   loginRequest: async (phoneNumber: string): Promise<LoginRequestResponse> => {
     try {
@@ -126,16 +136,13 @@ export const cafeAPI = {
     }
   },
 
-  getCategoryItemCounts: async (): Promise<Record<string, number>> => {
-    try {
-      const { data } = await apiClient.get('/dish/dishes')
-      return data
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || 'Failed to fetch category item counts')
-      }
-      throw error
+  getDishes: async () => {
+    const token = tokenUtils.getToken()
+    if (token) {
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
     }
+    const { data } = await apiClient.get('/dish/dishes')
+    return data
   },
 
   getDishesByCategoryId: async (categoryId: string): Promise<IDish[]> => {
@@ -161,6 +168,51 @@ export const cafeAPI = {
       }
       throw error
     }
-  }
+  },
+
+  createBooking: async (bookingDetails: {
+    table_id: string;
+    booking_date: string;
+    booking_time: string;
+    from_time: string;
+  }) => {
+    try {
+      const token = tokenUtils.getToken()
+      if (token) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      }
+
+      const { data } = await apiClient.post('/dine-in/bookings', bookingDetails)
+      return data
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to create booking')
+      }
+      throw error
+    }
+  },
+
+  createOrder: async (orderData: CreateOrderData): Promise<{ success: boolean; data: any }> => {
+    try {
+      const response = await fetch('https://41a5-103-90-211-86.ngrok-free.app/dine-in/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tokenUtils.getToken()}`,
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { success: true, data };
+    } catch (error) {
+      console.error('Error creating order:', error);
+      return { success: false, data: null };
+    }
+  },
 }
 

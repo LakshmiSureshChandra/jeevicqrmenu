@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useOrderStatus } from '../contexts/OrderContext'
+import { cafeAPI } from '../libs/api/cafeAPI'  // Import cafeAPI
 
 interface OrderItem {
   id: string
@@ -16,50 +17,16 @@ interface OrderItem {
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { orderStatus, setOrderStatus } = useOrderStatus()
+  const { setOrderStatus } = useOrderStatus()
 
-  // Initialize orderItems by combining localStorage and new items
   const [orderItems, setOrderItems] = useState<OrderItem[]>(() => {
-    const savedOrdersData = localStorage.getItem('currentOrder')
-    const savedItems = savedOrdersData ? JSON.parse(savedOrdersData) : []
-    const newItems = location.state?.items || []
-    
-    // Create a map to merge items
-    const itemMap = new Map()
-    
-    // Add saved items first
-    savedItems.forEach((item: OrderItem) => {
-      itemMap.set(item.id, item)
-    })
-    
-    // Merge new items, adding quantities if item exists
-    newItems.forEach((item: OrderItem) => {
-      const existingItem = itemMap.get(item.id)
-      if (existingItem) {
-        existingItem.quantity += item.quantity
-      } else {
-        itemMap.set(item.id, {...item})
-      }
-    })
-    
-    return Array.from(itemMap.values())
+    return location.state?.items || []
   })
 
-  // Remove the duplicate useEffect that loads from localStorage
-  const [isOrderConfirmed, setIsOrderConfirmed] = useState(location.state?.directConfirm || false)
-  
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
   const [tempInstructions, setTempInstructions] = useState('')
   const [showNotification, setShowNotification] = useState(false)
-  const [, setSavedOrders] = useState<OrderItem[][]>([])
-
-  useEffect(() => {
-    // Load saved orders from localStorage when component mounts
-    const savedOrdersData = localStorage.getItem('savedOrders')
-    if (savedOrdersData) {
-      setSavedOrders(JSON.parse(savedOrdersData))
-    }
-  }, [])
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const handleInstructionsClick = (itemId: string) => {
     if (expandedItemId === itemId) {
@@ -104,227 +71,33 @@ export const CheckoutPage = () => {
   }
 
   const totalBill = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [isFinished, setIsFinished] = useState(false)
-  const [ratings, setRatings] = useState<{[key: string]: number}>({})
-
-  useEffect(() => {
-    // Load saved orders from localStorage when component mounts
-    const savedOrdersData = localStorage.getItem('currentOrder')
-    if (savedOrdersData) {
-      const parsedData = JSON.parse(savedOrdersData)
-      setOrderItems(prev => [...prev, ...parsedData])
-    }
-  }, [])
 
   const handleConfirmOrder = async () => {
-    localStorage.setItem('currentOrder', JSON.stringify(orderItems))
-    setOrderStatus('received')
-    setIsOrderConfirmed(true)
-  }
-
-  const handleFinishOrder = () => {
-    setOrderStatus('preparing') // Add this line to update order status
-    setIsFinished(true)
-  }
-
-  const handleRating = (itemId: string, rating: number) => {
-    setRatings(prev => ({ ...prev, [itemId]: rating }))
-  }
-
-  const handleSubmitRatings = () => {
-    // Here you would typically send ratings to backend
-    localStorage.removeItem('currentOrder') // Clear the current order
-    navigate('/')
-  }
-
-  if (isFinished) {
-    // Get unique items by ID
-    const uniqueItems = orderItems.reduce((acc, current) => {
-      const existingItem = acc.find(item => item.id === current.id)
-      if (!existingItem) {
-        acc.push(current)
+    try {
+      const orderData = {
+        table_id: 'EX04',  // Replace with actual table ID
+        booking_id: 'booking_123',  // Replace with actual booking ID
+        items: orderItems.map(item => ({
+          dish_id: item.id,
+          quantity: item.quantity,
+          instructions: item.instructions
+        }))
       }
-      return acc
-    }, [] as OrderItem[])
 
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <div className="flex-1 p-4 space-y-6">
-          <h2 className="text-2xl font-semibold text-center">Rate Your Order</h2>
-          {uniqueItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-3xl p-4">
-              <div className="flex items-center gap-4">
-                <img 
-                  src={item.image} 
-                  alt={item.name}
-                  className="w-16 h-16 rounded-2xl object-cover"
-                />
-                <div className="flex-1">
-                  <h3 className="font-medium text-[15px] text-gray-800">{item.name}</h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        onClick={() => handleRating(item.id, star)}
-                        className={`text-2xl ${ratings[item.id] >= star ? 'text-orange-500' : 'text-gray-300'}`}
-                      >
-                        ★
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="p-4">
-          <button 
-            onClick={handleSubmitRatings}
-            className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
-          >
-            Submit Ratings
-          </button>
-        </div>
-      </div>
-    )
-  }
+      const response = await cafeAPI.createOrder(orderData)
 
-  if (isOrderConfirmed) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <div className="flex-1 p-4 space-y-6">
-          <div className="flex justify-center">
-            {orderStatus === 'received' ? (
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                  <path d="M20 6L9 17l-5-5"/>
-                </svg>
-              </div>
-            ) : orderStatus === 'preparing' ? (
-              <div className="w-16 h-16 flex items-center justify-center">
-                <img 
-                  src="/orderpreparing.png" 
-                  alt="Preparing Order" 
-                  className="w-16 h-16 object-contain"
-                />
-              </div>
-            ) : null}
-          </div>
-          
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-semibold text-gray-800">
-              {orderStatus === 'received' ? 'Order Received' : 'Preparing Your Order'}
-            </h1>
-            <p className="text-gray-600">
-              {orderStatus === 'received' 
-                ? 'Your Order has been received and our chefs will start preparing your order soon!'
-                : 'Our chefs are working on your delicious order. It will be ready soon!'}
-            </p>
-          </div>
-
-          {orderItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-3xl p-4">
-              <div className="flex items-center gap-4">
-                <img 
-                  src={item.image} 
-                  alt={item.name}
-                  className="w-16 h-16 rounded-2xl object-cover"
-                />
-                <div className="flex-1">
-                  <h3 className="font-medium text-[15px] text-gray-800">{item.name}</h3>
-                  <div className="text-orange-500 mt-1">₹{item.price}</div>
-                </div>
-                <div className="text-gray-600">
-                  Qty. {item.quantity}
-                </div>
-              </div>
-              {item.instructions && (
-                <div className="mt-2 text-sm text-gray-500 bg-gray-50 p-3 rounded-xl">
-                  {item.instructions}
-                </div>
-              )}
-            </div>
-          ))}
-
-          <div className="bg-white rounded-3xl p-4">
-            <div 
-              className="flex items-center justify-between cursor-pointer" 
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <div className="flex items-center gap-3">
-                <svg className="text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 10h18M3 14h18M3 18h18M3 6h18"/>
-                </svg>
-                <div>
-                  <div className="text-gray-400">Table</div>
-                  <div className="text-xl font-medium">EX04</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-gray-500 text-sm">Total Bill</div>
-                <div className="text-xl font-semibold text-orange-500">₹{totalBill}</div>
-                <div className="text-xs text-gray-400">
-                  Incl. of all Taxes and Charges
-                </div>
-              </div>
-              <button className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 15l-6-6-6 6"/>
-                </svg>
-              </button>
-            </div>
-
-            {isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                {orderItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-orange-500">X {item.quantity}</span>
-                    </div>
-                    <span className="text-gray-500">₹{item.price * item.quantity}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="p-4 grid grid-cols-2 gap-3">
-          <button 
-            onClick={() => {
-              setShowNotification(true)
-              setTimeout(() => setShowNotification(false), 3000)
-            }}
-            className="w-full bg-white border-2 border-orange-500 text-orange-500 py-4 rounded-xl font-semibold col-span-1"
-          >
-            Request Assistance
-          </button>
-          <button 
-            onClick={() => navigate('/')}
-            className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold col-span-1"
-          >
-            Order More
-          </button>
-        </div>
-        <div className="px-4 pb-4">
-          <button 
-            onClick={handleFinishOrder}
-            className="w-full bg-gray-800 text-white py-4 rounded-xl font-semibold"
-          >
-            Finish Order
-          </button>
-        </div>
-
-        {/* Themed Notification */}
-        {showNotification && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fade-in">
-            Your assistance is on the way!
-          </div>
-        )}
-      </div>
-    )
+      if (response.success) {
+        localStorage.setItem('currentOrder', JSON.stringify(orderItems))
+        setOrderStatus('received')
+        navigate('/order-confirmation', { state: { orderItems } })
+      } else {
+        throw new Error('Failed to create order')
+      }
+    } catch (error) {
+      console.error('Error creating order:', error)
+      setShowNotification(true)
+      setTimeout(() => setShowNotification(false), 3000)
+    }
   }
 
   return (
