@@ -89,14 +89,11 @@ export const OrderConfirmationPage = () => {
   }
 
   const confirmFinishOrder = () => {
-    setIsFinished(true)
     setShowConfirmDialog(false)
-    setShowNotification(true)
-    setTimeout(() => {
-      setShowNotification(false)
-    }, 3000)
+    setShowRatingDialog(true)
   }
 
+  // Add this new function
   const cancelFinishOrder = () => {
     setShowConfirmDialog(false)
   }
@@ -105,16 +102,31 @@ export const OrderConfirmationPage = () => {
     setRatings(prev => ({ ...prev, [itemId]: rating }))
   }
 
-  const handleConfirmRatings = () => {
-    setIsFinished(true)
-    setShowRatingDialog(false)
-    setShowNotification(true)
-    setTimeout(() => {
-      setShowNotification(false)
-    }, 3000)
-    // Here you can send the ratings to your backend if needed
-    console.log('Ratings:', ratings)
+  const handleConfirmRatings = async () => {
+    try {
+      // Push ratings to backend
+      // await cafeAPI.submitRatings(ratings)
+
+      // Clear local storage
+      localStorage.clear()
+
+      setIsFinished(true)
+      setShowRatingDialog(false)
+      setShowNotification(true)
+      setTimeout(() => {
+        setShowNotification(false)
+        navigate('/thank-you')  // Navigate to thank you page after notification
+      })
+    } catch (error) {
+      console.error('Error submitting ratings:', error)
+      setError('Failed to submit ratings. Please try again.')
+    }
   }
+
+  // Get unique dishes
+  const uniqueDishes = Array.from(new Set(orderItems.map(item => item.id)))
+    .map(id => orderItems.find(item => item.id === id))
+    .filter((item): item is OrderItem => item !== undefined)
 
   return (
     <motion.div 
@@ -211,7 +223,7 @@ export const OrderConfirmationPage = () => {
             <p className="mb-6">Are you sure you want to finish this order?</p>
             <div className="flex justify-end space-x-4">
               <button
-                onClick={cancelFinishOrder}
+                onClick={cancelFinishOrder}  // This line now uses the new function
                 className="px-4 py-2 border border-gray-300 rounded-lg"
               >
                 Cancel
@@ -244,17 +256,20 @@ export const OrderConfirmationPage = () => {
       {/* Rating Dialog */}
       {showRatingDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl w-full max-w-md">
+          <div className="bg-white p-6 rounded-xl w-full max-w-md max-h-[80vh] overflow-y-auto">
             <h3 className="text-xl font-semibold mb-4">Rate Your Order</h3>
-            {orderItems.map((item) => (
+            {uniqueDishes.map((item) => (
               <div key={item.id} className="mb-4">
-                <p className="font-medium">{item.name}</p>
+                <div className="flex items-center">
+                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-full object-cover mr-3" />
+                  <p className="font-medium">{item.name}</p>
+                </div>
                 <div className="flex items-center mt-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
                       onClick={() => handleRating(item.id, star)}
-                      className={`text-2xl ${
+                      className={`text-3xl ${
                         (ratings[item.id] || 0) >= star ? 'text-yellow-400' : 'text-gray-300'
                       }`}
                     >
@@ -266,7 +281,7 @@ export const OrderConfirmationPage = () => {
             ))}
             <button
               onClick={handleConfirmRatings}
-              className="w-full bg-orange-500 text-white py-2 rounded-lg mt-4"
+              className="w-full bg-orange-500 text-white py-3 rounded-lg mt-4 font-semibold"
             >
               Confirm Ratings
             </button>
@@ -283,4 +298,14 @@ export const OrderConfirmationPage = () => {
   if (error) {
     return <div>Error: {error}</div>
   }
+}
+
+// Add this new component at the end of the file
+export const ThankYouPage = () => {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <h1 className="text-4xl font-bold text-orange-500 mb-4">Thank You for Visiting Jeevic</h1>
+      <p className="text-xl text-gray-600 mb-8">We hope you enjoyed your meal!</p>
+    </div>
+  )
 }

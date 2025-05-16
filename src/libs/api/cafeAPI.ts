@@ -71,6 +71,14 @@ interface CreateOrderData {
   }>;
 }
 
+interface BannerItem {
+  _type: string;
+  created_at: string;
+  id: string;
+  image: string;
+  updated_at: string;
+}
+
 export const cafeAPI = {
   loginRequest: async (phoneNumber: string): Promise<LoginRequestResponse> => {
     try {
@@ -277,6 +285,24 @@ export const cafeAPI = {
       console.error('Error fetching orders by booking:', error)
       return { success: false, data: [] }
     }
-  }
+  },
+  submitRatings: async (ratings: {[key: string]: number}) => {
+    try {
+      const response = await apiClient.post('/ratings', ratings)
+      return response.data
+    } catch (error) {
+      console.error('Error submitting ratings:', error)
+      throw error
+    }
+  },
+  getBanners: async (): Promise<BannerItem[]> => {
+    try {
+      const response = await apiClient.get('/banner');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching banners:', error);
+      throw error;
+    }
+  },
 }
 

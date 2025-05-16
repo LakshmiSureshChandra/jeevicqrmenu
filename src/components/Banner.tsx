@@ -1,13 +1,11 @@
 import { useState, useEffect, TouchEvent } from 'react'
+interface BannerItem {
+  id: string
+  image: string
+}
 
 interface BannerProps {
-  banners: {
-    id: string
-    title: string
-    description: string  // Make it required
-    price: string       // Make it required
-    image: string
-  }[]
+  banners: BannerItem[]
 }
 
 export const Banner = ({ banners }: BannerProps) => {
@@ -51,52 +49,42 @@ export const Banner = ({ banners }: BannerProps) => {
     setTouchEnd(null)
   }
 
-  return (
-    <div className="relative overflow-hidden">
-      <div 
-        className="flex transition-transform duration-500 ease-in-out"
-        style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {banners.map((banner, index) => (
-          <div 
-            key={index}
-            className="min-w-full px-1"
-          >
-            <div className="relative bg-white rounded-2xl overflow-hidden h-48">
-              <img 
-                src={banner.image} 
-                alt={banner.title} 
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/50" /> {/* Dark overlay for better text visibility */}
-              <div className="relative z-10 p-6">
-                <div className="space-y-2 text-white">
-                  <h2 className="text-2xl font-semibold">{banner.title}</h2>
-                  <p className="text-gray-200 text-sm">{banner.description}</p>
-                  <p className="text-sm">
-                    Starting from <span className="text-orange-400 font-semibold">{banner.price}</span>
-                  </p>
-                </div>
+    return (
+      <div className="relative overflow-hidden">
+        <div 
+          className="flex transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {banners.map((banner, index) => (
+            <div 
+              key={banner.id}
+              className="min-w-full px-1"
+            >
+              <div className="relative bg-white rounded-2xl overflow-hidden h-48">
+                <img 
+                  src={banner.image} 
+                  alt={`Banner ${index + 1}`} 
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
+  
+        {/* Dots indicator */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
+          {banners.map((_, index) => (
+            <div
+              key={index}
+              className={`w-2 h-2 rounded-full ${
+                currentIndex === index ? 'bg-orange-500' : 'bg-gray-300'
+              }`}
+            />
+          ))}
+        </div>
       </div>
-
-      {/* Dots indicator */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-2">
-        {banners.map((_, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 rounded-full ${
-              currentIndex === index ? 'bg-orange-500' : 'bg-gray-300'
-            }`}
-          />
-        ))}
-      </div>
-    </div>
-  )
-}
+    )
+  }

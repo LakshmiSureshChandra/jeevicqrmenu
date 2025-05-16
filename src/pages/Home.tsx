@@ -2,7 +2,7 @@ import { Banner } from '../components/Banner'
 import { SearchBar } from '../components/SearchBar'
 import CategoryGrid from '../components/CategoryGrid'
 import { AuthOverlay } from '../components/AuthOverlay'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
@@ -25,9 +25,6 @@ interface OrderItem {
 interface BannerItem {
   id: string
   image: string
-  title: string
-  description: string
-  price: string
 }
 
 // Remove the Category interface and use IDishCategory instead
@@ -42,9 +39,20 @@ export const Home = () => {
   const { orderStatus } = useOrderStatus()
   const navigate = useNavigate()
   const { categories, setCategories, setCurrentCategory } = useCategories();
-  // Remove unused state variables
-  // const [bookingId, setBookingId] = useState<string | null>(null)
-  // const [orderId, setOrderId] = useState<string | null>(null)
+  const [banners, setBanners] = useState<BannerItem[]>([])
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const bannerData = await cafeAPI.getBanners()
+        setBanners(bannerData)
+      } catch (error) {
+        console.error('Error fetching banners:', error)
+      }
+    }
+
+    fetchBanners()
+  }, [])
 
   // Fetch categories
   useEffect(() => {
@@ -81,18 +89,6 @@ export const Home = () => {
     setCurrentCategory(categoryId);
     navigate(`/category/${categoryId}`);
   };
-
-  // Add banners data
-  const banners: BannerItem[] = [
-    {
-      id: '1',
-      image: '/banner1.jpg',
-      title: 'Special Offers',
-      description: 'Discover our latest deals',
-      price: '₹199'
-    }
-    // Add more banners as needed
-  ]
 
   // Check for active order
   useEffect(() => {
@@ -197,6 +193,35 @@ export const Home = () => {
     setShowOrderStatus(false);
   };
 
+  const fetchData = useCallback(async () => {
+    try {
+      const [categoriesData, dishesData] = await Promise.all([
+        cafeAPI.getCategories(),
+        cafeAPI.getDishes()
+      ]);
+
+      const formattedCategories = categoriesData.map((cat: any) => ({
+        ...cat,
+        created_at: new Date(cat.created_at),
+        updated_at: new Date(cat.updated_at)
+      }));
+
+      setCategories(formattedCategories);
+      setDishes(dishesData);
+
+      // Check for active order after fetching dishes
+      const checkAuthAndBookingResult = await cafeAPI.checkAuthAndBooking();
+      setIsAuthenticated(checkAuthAndBookingResult.isAuthenticated);
+      // ... rest of the checkAuthAndBooking logic
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    }
+  }, [setCategories, setDishes]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
   useEffect(() => {
     const fetchOrderDetails = async () => {
       const storedBookingId = localStorage.getItem('currentBookingId')
@@ -245,7 +270,7 @@ export const Home = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gray-50 pb-24"
     >
-      <div className="m-4">
+      <div className="mx-4 mt-4">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -436,7 +461,10 @@ export const Home = () => {
 
       {!isAuthenticated && (
         <AuthOverlay
-          onPhoneSignIn={() => setIsAuthenticated(true)}
+          onPhoneSignIn={() => {
+            setIsAuthenticated(true);
+            fetchData(); // Fetch data immediately after authentication
+          }}
         />
       )}
     </motion.div>

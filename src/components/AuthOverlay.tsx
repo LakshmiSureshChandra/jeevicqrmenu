@@ -195,12 +195,12 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             </div>
           )}
 
-          <p className="text-[12px] text-center text-gray-500">
+          {/* <p className="text-[12px] text-center text-gray-500">
             By clicking continue you agree to our{' '}
             <a href="#" className="text-orange-500">
               Terms & Conditions
             </a>
-          </p>
+          </p> */}
 
           <button
             className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium"
