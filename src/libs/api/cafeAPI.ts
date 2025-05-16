@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { tokenUtils } from '../utils/token'
 import { IDish } from './types' 
+import { IDineInOrders } from './types';
 
 const BASE_URL = 'https://41a5-103-90-211-86.ngrok-free.app'
 
@@ -214,5 +215,50 @@ export const cafeAPI = {
       return { success: false, data: null };
     }
   },
+
+  checkAuthAndBooking: async (): Promise<{
+    isAuthenticated: boolean;
+    shouldProceed: boolean;
+    orders?: IDineInOrders[];
+  }> => {
+    const isAuthenticated = tokenUtils.isTokenValid()
+    if (!isAuthenticated) {
+      return { isAuthenticated: false, shouldProceed: true }
+    }
+
+    const bookingId = localStorage.getItem('bookingId')
+    if (!bookingId) {
+      return { isAuthenticated: true, shouldProceed: true }
+    }
+
+    try {
+      const bookingResponse = await apiClient.get(`/dine-in/bookings/${bookingId}`)
+      const bookingData = bookingResponse.data
+
+      if (bookingData.is_cancelled || bookingData.is_completed) {
+        return { isAuthenticated: true, shouldProceed: true }
+      }
+
+      const orderId = localStorage.getItem('currentOrderId')
+      const ordersResponse = await apiClient.get(`/dine-in/orders/${orderId}`)
+      const ordersData = ordersResponse.data
+
+      return { isAuthenticated: true, shouldProceed: false, orders: ordersData }
+    } catch (error) {
+      console.error('Error checking booking status:', error)
+      return { isAuthenticated: true, shouldProceed: true }
+    }
+  },
+
+  getOrdersByBooking: async (): Promise<{ success: boolean; data: IDineInOrders[] }> => {
+    try {
+      const orderId = localStorage.getItem('currentOrderId')
+      const response = await apiClient.get(`/dine-in/orders/${orderId}`)
+      return { success: true, data: response.data }
+    } catch (error) {
+      console.error('Error fetching orders by booking:', error)
+      return { success: false, data: [] }
+    }
+  }
 }
 

@@ -53,12 +53,9 @@ export interface IDineInCheckout {
 
 export interface IDineInOrders {
     id: string;
-    booking_id: string;
-    user_id: string;
-    table_id: string;
     dish_id: string;
     quantity: number;
-    is_served: boolean;
+    instructions?: string;
     order_status: string;
     created_at: Date;
     updated_at: Date;

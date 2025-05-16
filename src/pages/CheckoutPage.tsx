@@ -87,7 +87,7 @@ export const CheckoutPage = () => {
       const response = await cafeAPI.createOrder(orderData)
 
       if (response.success) {
-        localStorage.setItem('currentOrder', JSON.stringify(orderItems))
+        localStorage.setItem('currentOrderId', response.data.data.id)
         setOrderStatus('received')
         navigate('/order-confirmation', { state: { orderItems } })
       } else {

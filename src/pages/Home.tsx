@@ -20,6 +20,16 @@ interface OrderItem {
   instructions?: string
 }
 
+interface APIOrder {
+  id: string;
+  dish: {
+    name: string;
+    price: number;
+    picture: string;
+  };
+  quantity: number;
+  instructions?: string;
+}
 
 // Add banner interface
 interface BannerItem {
@@ -41,6 +51,9 @@ export const Home = () => {
   const { orderStatus } = useOrderStatus()
   const navigate = useNavigate()
   const { categories, setCategories, setCurrentCategory } = useCategories();
+  // Remove unused state variables
+  // const [bookingId, setBookingId] = useState<string | null>(null)
+  // const [orderId, setOrderId] = useState<string | null>(null)
 
   // Fetch categories
   useEffect(() => {
@@ -83,20 +96,73 @@ export const Home = () => {
 
   // Check for active order
   useEffect(() => {
-    const currentOrder = localStorage.getItem('currentOrder')
-    if (currentOrder) {
-      const parsedOrder = JSON.parse(currentOrder)
-      setOrderItems(parsedOrder)
-      setHasActiveOrder(true)
-    } else {
-      setHasActiveOrder(false)
-    }
-  }, [])
+    const checkAuthAndBooking = async () => {
+      const result = await cafeAPI.checkAuthAndBooking();
+      setIsAuthenticated(result.isAuthenticated);
+      
+      if (result.orders && result.orders.length > 0) {
+        setHasActiveOrder(true);
+        setOrderItems(result.orders.map((order: APIOrder) => ({
+          id: order.id,
+          name: order.dish.name,
+          price: order.dish.price,
+          quantity: order.quantity,
+          image: order.dish.picture,
+          instructions: order.instructions
+        })));
+      } else {
+        // Check for active order in local storage
+        const currentOrder = localStorage.getItem('currentOrder')
+        if (currentOrder) {
+          const parsedOrder = JSON.parse(currentOrder)
+          setOrderItems(parsedOrder)
+          setHasActiveOrder(true)
+        } else {
+          setHasActiveOrder(false)
+        }
+      }
+    };
+
+    checkAuthAndBooking();
+  }, []);
 
   const handleFinishOrder = () => {
     navigate('order-confirmation')
     setShowOrderStatus(false);
   };
+
+  useEffect(() => {
+    const fetchOrderDetails = async () => {
+      const storedBookingId = localStorage.getItem('currentBookingId')
+      const storedOrderId = localStorage.getItem('currentOrderId')
+
+      if (storedBookingId && storedOrderId) {
+        try {
+          const orderDetails = await cafeAPI.getOrdersByBooking()
+          if (orderDetails.success && orderDetails.data.length > 0) {
+            setHasActiveOrder(true)
+            const currentOrder = orderDetails.data.find(order => order.id === storedOrderId)
+            if (currentOrder) {
+              setOrderItems([{
+                id: currentOrder.id,
+                name: currentOrder.dish.name, // Assuming the API returns the dish name
+                price: currentOrder.dish.price, // Assuming the API returns the dish price
+                quantity: currentOrder.quantity,
+                image: currentOrder.dish.picture, // Assuming the API returns the dish picture
+                instructions: currentOrder.instructions || ''
+              }])
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching order details:', error)
+        }
+      } else {
+        setHasActiveOrder(false)
+      }
+    }
+
+    fetchOrderDetails()
+  }, [])
 
   return (
     <motion.div
