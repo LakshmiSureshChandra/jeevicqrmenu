@@ -97,7 +97,7 @@ export const CheckoutPage = () => {
   const handleConfirmOrder = async () => {
     try {
       const orderData = {
-        table_id: 'EX04',  // Replace with actual table ID
+        table_id: 'EX04', 
         booking_id: localStorage.getItem('currentBookingId') || 'booking_123',
         items: orderItems.map(item => ({
           dish_id: item.id,
@@ -107,10 +107,10 @@ export const CheckoutPage = () => {
       };
 
       const response = await cafeAPI.createOrder(orderData);
-
+      console.log('Order response:', response); // Log the response for debugging purposes
       if (response.success) {
         if (!localStorage.getItem('currentOrderId')) {
-          localStorage.setItem('currentOrderId', response.data.id);
+          localStorage.setItem('currentOrderId', response.data.data.id);
         }
         setOrderStatus('received');
         navigate('/order-confirmation', { state: { orderItems } });

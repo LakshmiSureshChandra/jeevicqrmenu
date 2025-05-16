@@ -12,6 +12,7 @@ interface OrderItem {
   quantity: number
   image: string
   instructions?: string
+  dish_id: string
 }
 
 export const OrderConfirmationPage = () => {
@@ -46,6 +47,7 @@ export const OrderConfirmationPage = () => {
             const dish = dishesResponse.find((d: any) => d.id === item.dish_id);
             return {
               id: item.dish_id,
+              dish_id: item.dish_id,
               name: dish ? dish.name : item.dish_id,
               price: dish ? dish.price : 0,
               quantity: item.quantity,
@@ -98,17 +100,17 @@ export const OrderConfirmationPage = () => {
     setShowConfirmDialog(false)
   }
 
-  const handleRating = (itemId: string, rating: number) => {
-    setRatings(prev => ({ ...prev, [itemId]: rating }))
+  const handleRating = (id: string, rating: number) => {
+    setRatings(prev => ({ ...prev, [id]: rating }))
   }
 
   const handleConfirmRatings = async () => {
     try {
       // Push ratings to backend
-      // await cafeAPI.submitRatings(ratings)
+      await cafeAPI.submitRatings(ratings)
 
       // Clear local storage
-      localStorage.clear()
+    //   localStorage.clear()
 
       setIsFinished(true)
       setShowRatingDialog(false)

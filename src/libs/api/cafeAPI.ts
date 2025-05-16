@@ -286,13 +286,17 @@ export const cafeAPI = {
       return { success: false, data: [] }
     }
   },
-  submitRatings: async (ratings: {[key: string]: number}) => {
+  submitRatings: async (ratings: { [dish_id: string]: number }) => {
     try {
-      const response = await apiClient.post('/ratings', ratings)
-      return response.data
+      const formattedRatings = Object.entries(ratings).map(([dish_id, rating]) => ({
+        dish_id,
+        rating
+      }));
+      const response = await apiClient.post('/review/d', formattedRatings);
+      return response.data;
     } catch (error) {
-      console.error('Error submitting ratings:', error)
-      throw error
+      console.error('Error submitting ratings:', error);
+      throw error;
     }
   },
   getBanners: async (): Promise<BannerItem[]> => {

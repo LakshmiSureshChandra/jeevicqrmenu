@@ -41,18 +41,22 @@ export const Home = () => {
   const { categories, setCategories, setCurrentCategory } = useCategories();
   const [banners, setBanners] = useState<BannerItem[]>([])
 
-  useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const bannerData = await cafeAPI.getBanners()
-        setBanners(bannerData)
-      } catch (error) {
-        console.error('Error fetching banners:', error)
-      }
+  // Modify the fetchBanners function to be more reusable
+  const fetchBanners = useCallback(async () => {
+    try {
+      const bannerData = await cafeAPI.getBanners()
+      setBanners(bannerData)
+    } catch (error) {
+      console.error('Error fetching banners:', error)
     }
-
-    fetchBanners()
   }, [])
+
+  // Update the useEffect for fetching banners
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBanners()
+    }
+  }, [isAuthenticated, fetchBanners])
 
   // Fetch categories
   useEffect(() => {
@@ -212,11 +216,17 @@ export const Home = () => {
       // Check for active order after fetching dishes
       const checkAuthAndBookingResult = await cafeAPI.checkAuthAndBooking();
       setIsAuthenticated(checkAuthAndBookingResult.isAuthenticated);
+      
+      // Fetch banners after authentication
+      if (checkAuthAndBookingResult.isAuthenticated) {
+        fetchBanners();
+      }
+      
       // ... rest of the checkAuthAndBooking logic
     } catch (err) {
       console.error('Error fetching data:', err);
     }
-  }, [setCategories, setDishes]);
+  }, [setCategories, setDishes, fetchBanners]);
 
   useEffect(() => {
     fetchData();
@@ -463,7 +473,7 @@ export const Home = () => {
         <AuthOverlay
           onPhoneSignIn={() => {
             setIsAuthenticated(true);
-            fetchData(); // Fetch data immediately after authentication
+            fetchData(); // This will now also fetch banners
           }}
         />
       )}
