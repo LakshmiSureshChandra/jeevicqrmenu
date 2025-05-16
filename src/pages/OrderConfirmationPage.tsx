@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
@@ -15,14 +15,13 @@ interface OrderItem {
 
 export const OrderConfirmationPage = () => {
   const navigate = useNavigate()
-  const location = useLocation()
   const { setOrderStatus } = useOrderStatus()
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
   const [showNotification, setShowNotification] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [dishes, setDishes] = useState<any[]>([])
+  const [, setDishes] = useState<any[]>([])
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -176,18 +175,20 @@ export const OrderConfirmationPage = () => {
             >
               Request Assistance
             </button>
+            <div className="flex space-x-4">
             <button 
               onClick={() => navigate('/')}
-              className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
+              className="w-1/2 bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
             >
               Order More
             </button>
             <button 
               onClick={handleFinishOrder}
-              className="w-full bg-black text-white py-4 rounded-xl font-semibold text-lg"
+              className="w-1/2 bg-black text-white py-4 rounded-xl font-semibold text-lg"
             >
               Finish Order
             </button>
+          </div>
           </>
         ) : (
           <div className="text-center">
