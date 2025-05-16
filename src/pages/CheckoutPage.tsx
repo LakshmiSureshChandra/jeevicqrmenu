@@ -16,9 +16,38 @@ interface OrderItem {
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { orderStatus, setOrderStatus } = useOrderStatus() // Add this line to use the context
-  const [orderItems, setOrderItems] = useState<OrderItem[]>(location.state?.items || [])
+  const { orderStatus, setOrderStatus } = useOrderStatus()
+
+  // Initialize orderItems by combining localStorage and new items
+  const [orderItems, setOrderItems] = useState<OrderItem[]>(() => {
+    const savedOrdersData = localStorage.getItem('currentOrder')
+    const savedItems = savedOrdersData ? JSON.parse(savedOrdersData) : []
+    const newItems = location.state?.items || []
+    
+    // Create a map to merge items
+    const itemMap = new Map()
+    
+    // Add saved items first
+    savedItems.forEach((item: OrderItem) => {
+      itemMap.set(item.id, item)
+    })
+    
+    // Merge new items, adding quantities if item exists
+    newItems.forEach((item: OrderItem) => {
+      const existingItem = itemMap.get(item.id)
+      if (existingItem) {
+        existingItem.quantity += item.quantity
+      } else {
+        itemMap.set(item.id, {...item})
+      }
+    })
+    
+    return Array.from(itemMap.values())
+  })
+
+  // Remove the duplicate useEffect that loads from localStorage
   const [isOrderConfirmed, setIsOrderConfirmed] = useState(location.state?.directConfirm || false)
+  
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
   const [tempInstructions, setTempInstructions] = useState('')
   const [showNotification, setShowNotification] = useState(false)
@@ -89,32 +118,7 @@ export const CheckoutPage = () => {
   }, [])
 
   const handleConfirmOrder = async () => {
-    // Save current order to localStorage
-    const existingOrder = localStorage.getItem('currentOrder')
-    const existingItems = existingOrder ? JSON.parse(existingOrder) : []
-    
-    // Create a map to track items by ID
-    const itemMap = new Map()
-    
-    // First, add existing items to the map
-    existingItems.forEach((item: OrderItem) => {
-      itemMap.set(item.id, item)
-    })
-    
-    // Then merge new items, adding quantities if item exists
-    orderItems.forEach(newItem => {
-      const existingItem = itemMap.get(newItem.id)
-      if (existingItem) {
-        existingItem.quantity += newItem.quantity
-      } else {
-        itemMap.set(newItem.id, {...newItem})
-      }
-    })
-    
-    // Convert map values back to array
-    const mergedItems = Array.from(itemMap.values())
-    
-    localStorage.setItem('currentOrder', JSON.stringify(mergedItems))
+    localStorage.setItem('currentOrder', JSON.stringify(orderItems))
     setOrderStatus('received')
     setIsOrderConfirmed(true)
   }

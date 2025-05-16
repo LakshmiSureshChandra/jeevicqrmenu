@@ -1,40 +1,55 @@
 import { FC, useState, useEffect } from 'react'
+import { authAPI } from '../libs/api/cafeAPI'
+import { tokenUtils } from '../libs/utils/token'
 
 interface AuthOverlayProps {
-  onPhoneSignIn: (userData: { phone: string, firstName: string, lastName: string }) => void
+  onPhoneSignIn: (userData: { phone: string }) => void
 }
 
 export const AuthOverlay: FC<AuthOverlayProps> = ({
   onPhoneSignIn
 }) => {
   const [showOTP, setShowOTP] = useState(false)
-  const [showNameForm, setShowNameForm] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState('')
-  const [otp, setOTP] = useState(['', '', '', ''])
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [selectedCountry, setSelectedCountry] = useState({ code: '+91', flag: '🇮🇳' })
-  const [showCountryList, setShowCountryList] = useState(false)
+  const [otp, setOTP] = useState(['', '', '', '', '', '']) // Changed to 6 digits
 
-  const countries = [
-    { code: '+91', flag: '🇮🇳', name: 'India' },
-    { code: '+1', flag: '🇺🇸', name: 'USA' },
-    { code: '+44', flag: '🇬🇧', name: 'UK' },
-    // Add more countries as needed
-  ]
+  useEffect(() => {
+    // Check if there's a valid token on mount
+    if (authAPI.checkAuth()) {
+      const token = tokenUtils.getToken()
+      if (token) {
+        onPhoneSignIn({ phone: `+91${phoneNumber}` })
+      }
+    }
+  }, [])
 
-  const handleContinue = () => {
-    if (!showOTP) {
-      setShowOTP(true)
-    } else if (showOTP && !showNameForm) {
-      setShowNameForm(true)
-    } else {
-      // Submit all user data
-      onPhoneSignIn({
-        phone: `${selectedCountry.code}${phoneNumber}`,
-        firstName: firstName.trim(),
-        lastName: lastName.trim()
-      })
+  const handleContinue = async () => {
+    try {
+      if (!showOTP) {
+        await authAPI.loginRequest(phoneNumber)
+        setShowOTP(true)
+        setTimer(30)
+      } else {
+        const otpString = otp.join('')
+        const response = await authAPI.verifyOTP(phoneNumber, otpString)
+        if (response.access_token) {
+          onPhoneSignIn({
+            phone: `+91${phoneNumber}`
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Authentication error:', error)
+    }
+  }
+
+  const handleResendOTP = async () => {
+    try {
+      await authAPI.loginRequest(phoneNumber)
+      setTimer(30)
+    } catch (error) {
+      console.error('Failed to resend OTP:', error)
+      // Here you might want to show an error message to the user
     }
   }
 
@@ -46,10 +61,29 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
     newOTP[index] = value
     setOTP(newOTP)
 
-    // Auto focus next input
-    if (value && index < 3) {
+    // Auto focus next input if there's a value and not the last digit
+    if (value && index < 5) {
       const nextInput = document.querySelector(`input[name='otp-${index + 1}']`) as HTMLInputElement
       if (nextInput) nextInput.focus()
+    }
+
+    // If pasting multiple digits
+    if (value.length > 1) {
+      const pastedValues = value.slice(0, 6 - index).split('')
+      const updatedOTP = [...otp]
+      pastedValues.forEach((digit, i) => {
+        if (index + i < 6) {
+          updatedOTP[index + i] = digit
+        }
+      })
+      setOTP(updatedOTP)
+      
+      // Focus the next empty input or the last input
+      const nextEmptyIndex = updatedOTP.findIndex((digit, i) => i > index && !digit)
+      if (nextEmptyIndex !== -1 && nextEmptyIndex < 6) {
+        const nextInput = document.querySelector(`input[name='otp-${nextEmptyIndex}']`) as HTMLInputElement
+        if (nextInput) nextInput.focus()
+      }
     }
   }
 
@@ -79,27 +113,15 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
     }
   }, [timer])
 
-  const handleResendOTP = () => {
-    // Here you would typically trigger the OTP resend API
-    setTimer(30) // Start 30 second countdown
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
 
       <div className="relative bg-white rounded-2xl w-[90%] max-w-md p-6 space-y-6">
-
         <div className="space-y-4">
           {!showOTP ? (
-            <div className="flex items-center border rounded-xl p-3 gap-2 relative">
-              <div
-                className="flex items-center gap-1 cursor-pointer"
-                onClick={() => setShowCountryList(!showCountryList)}
-              >
-                <span>{selectedCountry.flag}</span>
-                <span className="text-gray-600">{selectedCountry.code}</span>
-              </div>
+            <div className="flex items-center border rounded-xl p-3 gap-2">
+              <span className="text-gray-600">+91</span>
               <input
                 type="tel"
                 placeholder="Enter phone number"
@@ -108,53 +130,11 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 maxLength={10}
               />
-
-              {/* Country selection dropdown */}
-              {showCountryList && (
-                <div className="absolute left-0 top-full mt-1 bg-white border rounded-xl shadow-lg max-h-48 overflow-y-auto w-48 z-50">
-                  {countries.map((country) => (
-                    <div
-                      key={country.code}
-                      className="flex items-center gap-2 p-3 hover:bg-gray-50 cursor-pointer"
-                      onClick={() => {
-                        setSelectedCountry(country)
-                        setShowCountryList(false)
-                      }}
-                    >
-                      <span>{country.flag}</span>
-                      <span>{country.name}</span>
-                      <span className="text-gray-500">{country.code}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : showNameForm ? (
-            <div className="space-y-3">
-              <p className="text-center text-gray-600">
-                Please enter your name
-              </p>
-              <div className="space-y-2">
-                <input
-                  type="text"
-                  placeholder="First Name"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full border rounded-xl p-3 outline-none"
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className="w-full border rounded-xl p-3 outline-none"
-                />
-              </div>
             </div>
           ) : (
             <div className="space-y-3">
               <p className="text-center text-gray-600">
-                Enter the 4-digit code sent to {selectedCountry.code} {phoneNumber}
+                Enter the 6-digit code sent to +91 {phoneNumber}
               </p>
               <div className="flex justify-center gap-2">
                 {otp.map((digit, index) => (
@@ -166,7 +146,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                     value={digit}
                     onChange={(e) => handleOTPChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-12 h-12 text-center border rounded-xl outline-none text-lg"
+                    className="w-10 h-12 text-center border rounded-xl outline-none text-lg" // Adjusted width for 6 digits
                   />
                 ))}
               </div>
@@ -195,9 +175,8 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
           <button
             className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium"
             onClick={handleContinue}
-            disabled={showNameForm && (!firstName.trim() || !lastName.trim())}
           >
-            {showNameForm ? 'Submit' : showOTP ? 'Confirm' : 'Continue'}
+            {showOTP ? 'Confirm' : 'Continue'}
           </button>
         </div>
       </div>

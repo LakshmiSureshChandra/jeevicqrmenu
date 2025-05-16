@@ -1,12 +1,13 @@
 import { Banner } from '../components/Banner'
 import { SearchBar } from '../components/SearchBar'
-import { CategoryGrid } from '../components/CategoryGrid'
+import CategoryGrid from '../components/CategoryGrid'
 import { AuthOverlay } from '../components/AuthOverlay'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
+import { authAPI } from '../libs/api/cafeAPI'
 
 
 interface OrderItem {
@@ -18,38 +19,57 @@ interface OrderItem {
   instructions?: string
 }
 
+
+interface Category {
+  _type: string
+  id: string
+  name: string
+  picture: string
+  created_at: string
+  updated_at: string
+}
+
+// Add banner interface
+interface BannerItem {
+  id: string
+  image: string
+  title: string
+  description: string
+  price: string
+}
+
 export const Home = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showOrderStatus, setShowOrderStatus] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
-  const navigate = useNavigate()
-  const categories = [
-    { name: 'Burger', image: '/burgerfeast.webp' },
-    { name: 'Rice items', image: '/pizzaparty.jpg' },
-    { name: 'Popular', image: '/pizzaparty.jpg' },
-    { name: 'Deals', image: '/pizzaparty.jpg' },
-    { name: 'Wraps', image: '/pizzaparty.jpg' },
-    { name: 'Pizza', image: '/pizzaparty.jpg' },
-  ]
-  const banners = [
-    {
-      title: "Pizza Party",
-      description: "Enjoy pizza from Johnny and get upto 30% off",
-      price: "₹100",
-      image: "/pizzaparty.jpg"
-    },
-    {
-      title: "Burger Fest",
-      description: "Get your favorite burgers with special sauce",
-      price: "₹80",
-      image: "/burgerfeast.webp"
-    },
-    // Add more banners as needed
-  ]
   const [hasActiveOrder, setHasActiveOrder] = useState(false)
-  const { orderStatus } = useOrderStatus() // Remove setOrderStatus since it's not used
+  const navigate = useNavigate()
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const { orderStatus } = useOrderStatus()
 
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await authAPI.getCategories()
+        console.log('Categories data:', data)
+        setCategories(data)
+      } catch (err) {
+        console.error('Error:', err)
+        setError(err instanceof Error ? err.message : 'Failed to fetch categories')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchCategories()
+  }, [])
+
+  // Handle order status
   useEffect(() => {
     const currentOrder = localStorage.getItem('currentOrder')
     setHasActiveOrder(!!currentOrder)
@@ -60,14 +80,43 @@ export const Home = () => {
       setOrderItems([])
       setHasActiveOrder(false)
     }
-  }, [orderStatus]) // Add orderStatus as a dependency to re-fetch when it changes
+  }, [orderStatus])
+
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center p-4">{error}</div>
+  }
+
+  // Add banners data
+  const banners: BannerItem[] = [
+    {
+      id: '1',
+      image: '/banner1.jpg',
+      title: 'Special Offers',
+      description: 'Discover our latest deals',
+      price: '₹199'
+    }
+    // Add more banners as needed
+  ]
+
+  // Update the navigation to use category ID instead of name
+  const handleCategoryClick = (categoryId: string) => {
+    navigate(`/category/${categoryId}`)
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50"
+      className="min-h-screen bg-gray-50 pb-24"
     >
       <div className="m-4">
         <motion.div
@@ -84,7 +133,7 @@ export const Home = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-4"
         >
-          <SearchBar />
+          <SearchBar showFilter={false} onSearch={setSearchQuery} />
         </motion.div>
 
         <motion.div
@@ -92,7 +141,14 @@ export const Home = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <CategoryGrid categories={categories} />
+          <CategoryGrid 
+            categories={filteredCategories.map(cat => ({
+              id: cat.id,
+              name: cat.name,
+              image: cat.picture // Make sure to use picture instead of image
+            }))}
+            onCategoryClick={(id) => handleCategoryClick(id)}
+          />
         </motion.div>
       </div>
 

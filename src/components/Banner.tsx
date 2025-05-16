@@ -2,9 +2,10 @@ import { useState, useEffect, TouchEvent } from 'react'
 
 interface BannerProps {
   banners: {
+    id: string
     title: string
-    description: string
-    price: string
+    description: string  // Make it required
+    price: string       // Make it required
     image: string
   }[]
 }

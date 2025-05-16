@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { Filter } from './Filter'
 
-export const SearchBar = () => {
+interface SearchBarProps {
+  showFilter?: boolean
+  onSearch?: (query: string) => void
+  onApplyFilters?: (filters: { ratings: number[], priceRange: string }) => void
+}
+
+export const SearchBar = ({ showFilter = false, onSearch, onApplyFilters }: SearchBarProps) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   return (
@@ -17,21 +23,30 @@ export const SearchBar = () => {
             type="text" 
             placeholder="Search items by name"
             className="w-full py-3 pr-4 text-gray-600 placeholder-gray-400 bg-transparent focus:outline-none"
+            onChange={(e) => onSearch?.(e.target.value)}
           />
         </div>
-        <button 
-          className="px-4 py-2 border-l border-gray-200"
-          onClick={() => setIsFilterOpen(true)}
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="4" y="5" width="16" height="2" rx="1" fill="#F97316"/>
-            <rect x="7" y="11" width="10" height="2" rx="1" fill="#F97316"/>
-            <rect x="10" y="17" width="4" height="2" rx="1" fill="#F97316"/>
-          </svg>
-        </button>
+        {showFilter && (
+          <button 
+            className="px-4 py-2 border-l border-gray-200"
+            onClick={() => setIsFilterOpen(true)}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="4" y="5" width="16" height="2" rx="1" fill="#F97316"/>
+              <rect x="7" y="11" width="10" height="2" rx="1" fill="#F97316"/>
+              <rect x="10" y="17" width="4" height="2" rx="1" fill="#F97316"/>
+            </svg>
+          </button>
+        )}
       </div>
 
-      <Filter isOpen={isFilterOpen} onClose={() => setIsFilterOpen(false)} />
+      {showFilter && (
+        <Filter 
+          isOpen={isFilterOpen} 
+          onClose={() => setIsFilterOpen(false)}
+          onApplyFilters={filters => onApplyFilters?.(filters)}
+        />
+      )}
     </>
   )
 }
