@@ -14,6 +14,8 @@ interface OrderItem {
   instructions?: string
 }
 
+import { useEffect } from 'react'
+
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
@@ -27,6 +29,74 @@ export const CheckoutPage = () => {
   const [tempInstructions, setTempInstructions] = useState('')
   const [showNotification, setShowNotification] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [hasPastOrders, setHasPastOrders] = useState(false);
+
+  // Helper to get or create a valid booking ID
+  const getValidBookingId = async () => {
+    let bookingId = localStorage.getItem('currentBookingId');
+    if (!bookingId) {
+      // If no bookingId, create a new booking
+      const now = new Date();
+      const bookingDetails = {
+        table_id: 'EX04', // Replace with actual table id if needed
+        booking_date: now.toISOString().slice(0, 10),
+        booking_time: now.toISOString(),
+        from_time: now.toISOString()
+      };
+      const newBookingResp = await cafeAPI.createBooking(bookingDetails);
+      if (newBookingResp && newBookingResp.id) {
+        bookingId = newBookingResp.id;
+        // localStorage.setItem('currentBookingId', bookingId);
+        return bookingId;
+      }
+      return null;
+    }
+
+    // Fetch booking status
+    const bookingResp = await cafeAPI.getBookingById();
+    const bookingData = Array.isArray(bookingResp.data) ? bookingResp.data[0] : bookingResp.data;
+    if (
+      !bookingResp.success ||
+      !bookingData ||
+      bookingData.is_cancelled === true ||
+      bookingData.is_completed === true
+    ) {
+      // Create new booking if cancelled or completed
+      const now = new Date();
+      const bookingDetails = {
+        table_id: 'EX04', // Replace with actual table id if needed
+        booking_date: now.toISOString().slice(0, 10),
+        booking_time: now.toISOString(),
+        from_time: now.toISOString()
+      };
+      const newBookingResp = await cafeAPI.createBooking(bookingDetails);
+      if (newBookingResp && newBookingResp.id) {
+        bookingId = newBookingResp.id;
+        return bookingId;
+      }
+      return null;
+    }
+    return bookingId;
+  };
+
+  // Check for past orders on mount
+  useEffect(() => {
+    const checkPastOrders = async () => {
+      const bookingId = localStorage.getItem('currentBookingId');
+      if (!bookingId) {
+        setHasPastOrders(false);
+        return;
+      }
+      // getOrdersById expects bookingId
+      const ordersResp = await cafeAPI.getOrdersByID();
+      if (ordersResp.success && Array.isArray(ordersResp.data) && ordersResp.data.length > 0) {
+        setHasPastOrders(true);
+      } else {
+        setHasPastOrders(false);
+      }
+    };
+    checkPastOrders();
+  }, []);
 
   const handleInstructionsClick = (itemId: string) => {
     if (expandedItemId === itemId) {
@@ -74,17 +144,20 @@ export const CheckoutPage = () => {
 
   const handleConfirmOrder = async () => {
     try {
+      const bookingId = await getValidBookingId();
+      if (!bookingId) throw new Error('No valid booking ID');
+
       const orderData = {
         table_id: 'EX04',  // Replace with actual table ID
-        booking_id: 'booking_123',  // Replace with actual booking ID
+        booking_id: bookingId,  // Use valid booking ID
         items: orderItems.map(item => ({
           dish_id: item.id,
           quantity: item.quantity,
           instructions: item.instructions
         }))
-      }
+      };
 
-      const response = await cafeAPI.createOrder(orderData)
+      const response = await cafeAPI.createOrder(orderData);
 
       if (response.success) {
         localStorage.setItem('currentOrderId', response.data.data.id)
@@ -254,6 +327,19 @@ export const CheckoutPage = () => {
           Confirm Order
         </button>
       </motion.div>
+
+      {/* Side button for past orders */}
+      {hasPastOrders && (
+        <button
+          className="fixed right-6 bottom-32 z-50 bg-orange-500 text-white px-6 py-3 rounded-full shadow-lg"
+          onClick={() => {
+            // Implement your logic to show past orders
+            navigate('/past-orders');
+          }}
+        >
+          View Past Orders
+        </button>
+      )}
 
       {/* Themed Notification */}
       <AnimatePresence>

@@ -9,6 +9,7 @@ import { useOrderStatus } from '../contexts/OrderContext'
 import { useCategories } from '../contexts/CategoryContext'
 import { cafeAPI } from '../libs/api/cafeAPI'
 import { IDishCategory } from '../libs/api/types'
+import { IDish } from '../libs/api/types'
 
 
 interface OrderItem {
@@ -47,6 +48,7 @@ export const Home = () => {
   const [showOrderStatus, setShowOrderStatus] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
   const [hasActiveOrder, setHasActiveOrder] = useState(false)
+  const [dishes, setDishes] = useState<IDish[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const { orderStatus } = useOrderStatus()
   const navigate = useNavigate()
@@ -60,7 +62,6 @@ export const Home = () => {
     const fetchCategories = async () => {
       try {
         const data = await cafeAPI.getCategories();
-        console.log('Categories data:', data);
         // Convert string dates to Date objects
         const formattedData = data.map((cat: any) => ({
           ...cat,
@@ -75,7 +76,17 @@ export const Home = () => {
 
     fetchCategories();
   }, [setCategories]);
-
+  useEffect(() => {
+    const fetchDishes = async () => {
+      try {
+        const data = await cafeAPI.getDishes();
+        setDishes(data);
+      } catch (err) {
+        console.error('Error fetching dishes:', err);
+      }
+    };
+    fetchDishes();
+  }, []);
   // Update the navigation to use category ID
   const handleCategoryClick = (categoryId: string) => {
     setCurrentCategory(categoryId);
@@ -96,35 +107,101 @@ export const Home = () => {
 
   // Check for active order
   useEffect(() => {
+    // Only run if dishes are loaded
+    if (dishes.length === 0) return;
+
     const checkAuthAndBooking = async () => {
       const result = await cafeAPI.checkAuthAndBooking();
       setIsAuthenticated(result.isAuthenticated);
-      
+
+      const storedBookingId = localStorage.getItem('currentBookingId');
+      const storedOrderId = localStorage.getItem('currentOrderId');
+
+      if (storedOrderId && storedBookingId) {
+        try {
+          const orderDetails = await cafeAPI.getOrdersByID();
+          const orderData = orderDetails.data;
+
+          let currentOrder = null;
+          if (Array.isArray(orderData)) {
+            currentOrder = orderData.find((order: any) => order.id === storedOrderId);
+          } else {
+            currentOrder = orderData;
+          }
+          if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
+            setHasActiveOrder(true);
+           
+
+            setOrderItems(
+              (currentOrder.items || []).map((item: any) => {
+                const dish = dishes.find(d => d.id === item.dish_id);
+             
+                return {
+                  id: item.dish_id,
+                  name: dish ? dish.name : item.dish_id,
+                  price: dish ? dish.price : 0,
+                  quantity: item.quantity,
+                  image: dish ? dish.picture : '',
+                  instructions: item.instructions || ''
+                };
+              })
+            );
+           
+            return;
+          }
+        } catch (error) {
+          console.error('Error fetching order details:', error);
+        }
+      }
+
+      // Fallback to checkAuthAndBooking result (for new/other orders)
       if (result.orders && result.orders.length > 0) {
         setHasActiveOrder(true);
-        setOrderItems(result.orders.map((order: APIOrder) => ({
-          id: order.id,
-          name: order.dish.name,
-          price: order.dish.price,
-          quantity: order.quantity,
-          image: order.dish.picture,
-          instructions: order.instructions
-        })));
+        const allOrderItems = result.orders.flatMap((order: any) =>
+          (order.items || []).map((item: any) => {
+            const dish = dishes.find(d => d.id === item.dish_id);
+            return {
+              id: item.dish_id,
+              name: dish ? dish.name : item.dish_id,
+              price: dish ? dish.price : 0,
+              quantity: item.quantity,
+              image: dish ? dish.picture : '',
+              instructions: item.instructions || ''
+            };
+          })
+        );
+        setOrderItems(allOrderItems);
       } else {
         // Check for active order in local storage
-        const currentOrder = localStorage.getItem('currentOrder')
+        const currentOrder = localStorage.getItem('currentOrder');
         if (currentOrder) {
-          const parsedOrder = JSON.parse(currentOrder)
-          setOrderItems(parsedOrder)
-          setHasActiveOrder(true)
+          const parsedOrder = JSON.parse(currentOrder);
+          setOrderItems(parsedOrder);
+          setHasActiveOrder(true);
         } else {
-          setHasActiveOrder(false)
+          // No current order found, create a new booking
+          const now = new Date();
+          const bookingDetails = {
+            table_id: 'EX04', // Replace with actual table id if needed
+            booking_date: now.toISOString(),
+            booking_time: now.toISOString(),
+            from_time: now.toISOString()
+          };
+          try {
+            const newBookingResp = await cafeAPI.createBooking(bookingDetails);
+            if (newBookingResp && newBookingResp.id) {
+              localStorage.setItem('currentBookingId', newBookingResp.id);
+            }
+          } catch (err) {
+            console.error('Error creating new booking:', err);
+          }
+          setHasActiveOrder(false);
         }
       }
     };
 
     checkAuthAndBooking();
-  }, []);
+  }, [dishes]); // <-- run when dishes are loaded
 
   const handleFinishOrder = () => {
     navigate('order-confirmation')
@@ -138,20 +215,28 @@ export const Home = () => {
 
       if (storedBookingId && storedOrderId) {
         try {
-          const orderDetails = await cafeAPI.getOrdersByBooking()
-          if (orderDetails.success && orderDetails.data.length > 0) {
-            setHasActiveOrder(true)
-            const currentOrder = orderDetails.data.find(order => order.id === storedOrderId)
-            if (currentOrder) {
-              setOrderItems([{
-                id: currentOrder.id,
-                name: currentOrder.dish.name, // Assuming the API returns the dish name
-                price: currentOrder.dish.price, // Assuming the API returns the dish price
-                quantity: currentOrder.quantity,
-                image: currentOrder.dish.picture, // Assuming the API returns the dish picture
-                instructions: currentOrder.instructions || ''
-              }])
-            }
+          const orderDetails = await cafeAPI.getOrdersByID()
+          // If orderDetails.data is an array, find the order by ID
+          let currentOrder = null;
+          if (Array.isArray(orderDetails.data)) {
+            currentOrder = orderDetails.data.find((order: any) => order.id === storedOrderId);
+          } else {
+            // If it's a single object, use it directly
+            currentOrder = orderDetails.data;
+          }
+          if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
+            setHasActiveOrder(true);
+            setOrderItems(
+              (currentOrder.items || []).map((item: any) => ({
+                id: item.dish_id,
+                name: 'Sample Dish', // Placeholder
+                price: 100,          // Placeholder
+                quantity: item.quantity,
+                image: '/placeholder-dish.jpg', // Placeholder image path
+                instructions: item.instructions || ''
+              }))
+            );
+            return;
           }
         } catch (error) {
           console.error('Error fetching order details:', error)

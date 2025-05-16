@@ -51,14 +51,23 @@ export interface IDineInCheckout {
     updated_at: Date;
 }
 
+export interface IOrderItem {
+    dish_id: string;
+    quantity: number;
+    instructions?: string;
+}
+
 export interface IDineInOrders {
-    id: string;
+    id?: string;
     dish_id: string;
     quantity: number;
     instructions?: string;
     order_status: string;
     created_at: Date;
     updated_at: Date;
+    is_cancelled: boolean;
+    is_completed: boolean;
+    items?: IOrderItem[]; // <-- Use the new type here
 }
 
 export interface IDineInTableBookings {

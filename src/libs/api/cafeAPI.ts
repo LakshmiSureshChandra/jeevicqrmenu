@@ -184,6 +184,7 @@ export const cafeAPI = {
       }
 
       const { data } = await apiClient.post('/dine-in/bookings', bookingDetails)
+      localStorage.setItem("currentBookingId",data.data.id)
       return data
     } catch (error) {
       if (axios.isAxiosError(error)) {
@@ -250,11 +251,21 @@ export const cafeAPI = {
     }
   },
 
-  getOrdersByBooking: async (): Promise<{ success: boolean; data: IDineInOrders[] }> => {
+  getBookingById: async (): Promise<{ success: boolean; data: IDineInOrders[] }> => {
+    try {
+      const bookingId = localStorage.getItem('currentBookingId');
+      const response = await apiClient.get(`/dine-in/bookings/${bookingId}`)
+      return { success: true, data: response.data }
+    } catch (error) {
+      console.error('Error fetching orders by booking:', error)
+      return { success: false, data: [] }
+    }
+  },
+  getOrdersByID: async (): Promise<{ success: boolean; data: IDineInOrders[] }> => {
     try {
       const orderId = localStorage.getItem('currentOrderId')
       const response = await apiClient.get(`/dine-in/orders/${orderId}`)
-      return { success: true, data: response.data }
+      return { success: true, data: response.data.data }
     } catch (error) {
       console.error('Error fetching orders by booking:', error)
       return { success: false, data: [] }
