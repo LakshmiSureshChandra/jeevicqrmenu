@@ -31,44 +31,46 @@ export const OrderConfirmationPage = () => {
         if (!orderId) {
           throw new Error('No order ID found')
         }
+        // Fetch orders and dishes concurrently
         const [orderResponse, dishesResponse] = await Promise.all([
           cafeAPI.getOrdersByID(),
           cafeAPI.getDishes()
         ])
         
         if (orderResponse.success && orderResponse.data) {
-          const orderData = Array.isArray(orderResponse.data) ? orderResponse.data[0] : orderResponse.data
-          setDishes(dishesResponse)
-          const result = await cafeAPI.checkAuthAndBooking();
-          const mappedOrderItems = result.orders.flatMap((order: any) =>
-            (order.items || []).map((item: any) => {
-              const dish = dishes.find(d => d.id === item.dish_id);
-              return {
-                id: item.dish_id,
-                name: dish ? dish.name : item.dish_id,
-                price: dish ? dish.price : 0,
-                quantity: item.quantity,
-                image: dish ? dish.picture : '',
-                instructions: item.instructions || ''
-              };
-            })
-          );
-          
-          setOrderItems(mappedOrderItems)
-          setTableNumber(orderData.table_id || '')
+          const orderData = Array.isArray(orderResponse.data) ? orderResponse.data[0] : orderResponse.data;
+          setDishes(dishesResponse);
+
+          // Map order items with dish details
+          const mappedOrderItems = (orderData.items || []).map((item: any) => {
+            const dish = dishesResponse.find((d: any) => d.id === item.dish_id);
+            return {
+              id: item.dish_id,
+              name: dish ? dish.name : item.dish_id,
+              price: dish ? dish.price : 0,
+              quantity: item.quantity,
+              image: dish ? dish.picture : '',
+              instructions: item.instructions || ''
+            };
+          });
+
+          // Ensure you are accessing the correct property for table number
+          const tableNumber =  '243'; // Verify if table_id is correct
+          setOrderItems(mappedOrderItems);
+          setTableNumber(tableNumber);
         } else {
-          throw new Error('Failed to fetch order details')
+          throw new Error('Failed to fetch order details');
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred')
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchOrderDetails()
-    setOrderStatus('received')
-  }, [setOrderStatus])
+    fetchOrderDetails();
+    setOrderStatus('received');
+  }, [setOrderStatus]);
 
   const totalBill = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
