@@ -2,8 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
-// Remove unused import
-// import { tokenUtils } from '../libs/utils/token'
+import { cafeAPI } from '../libs/api/cafeAPI'
 
 interface OrderItem {
   id: string
@@ -18,11 +17,56 @@ export const OrderConfirmationPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { setOrderStatus } = useOrderStatus()
-  const [orderItems] = useState<OrderItem[]>(location.state?.orderItems || [])
-  const [tableNumber] = useState(location.state?.tableNumber || '')
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
+  const [tableNumber, setTableNumber] = useState('')
   const [showNotification, setShowNotification] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [dishes, setDishes] = useState<any[]>([])
 
   useEffect(() => {
+    const fetchOrderDetails = async () => {
+      try {
+        const orderId = localStorage.getItem('currentOrderId')
+        if (!orderId) {
+          throw new Error('No order ID found')
+        }
+        const [orderResponse, dishesResponse] = await Promise.all([
+          cafeAPI.getOrdersByID(),
+          cafeAPI.getDishes()
+        ])
+        
+        if (orderResponse.success && orderResponse.data) {
+          const orderData = Array.isArray(orderResponse.data) ? orderResponse.data[0] : orderResponse.data
+          setDishes(dishesResponse)
+          const result = await cafeAPI.checkAuthAndBooking();
+          const mappedOrderItems = result.orders.flatMap((order: any) =>
+            (order.items || []).map((item: any) => {
+              const dish = dishes.find(d => d.id === item.dish_id);
+              return {
+                id: item.dish_id,
+                name: dish ? dish.name : item.dish_id,
+                price: dish ? dish.price : 0,
+                quantity: item.quantity,
+                image: dish ? dish.picture : '',
+                instructions: item.instructions || ''
+              };
+            })
+          );
+          
+          setOrderItems(mappedOrderItems)
+          setTableNumber(orderData.table_id || '')
+        } else {
+          throw new Error('Failed to fetch order details')
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'An error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrderDetails()
     setOrderStatus('received')
   }, [setOrderStatus])
 
@@ -229,4 +273,12 @@ export const OrderConfirmationPage = () => {
       )}
     </motion.div>
   )
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>
+  }
 }

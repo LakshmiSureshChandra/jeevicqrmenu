@@ -196,13 +196,19 @@ export const cafeAPI = {
 
   createOrder: async (orderData: CreateOrderData): Promise<{ success: boolean; data: any }> => {
     try {
-      const response = await fetch('https://41a5-103-90-211-86.ngrok-free.app/dine-in/orders', {
-        method: 'POST',
+      const currentOrderId = localStorage.getItem('currentOrderId');
+      const url = currentOrderId
+        ? `https://41a5-103-90-211-86.ngrok-free.app/dine-in/orders/${currentOrderId}`
+        : 'https://41a5-103-90-211-86.ngrok-free.app/dine-in/orders';
+      const method = currentOrderId ? 'PATCH' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${tokenUtils.getToken()}`,
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(currentOrderId ? { items: orderData.items } : orderData),
       });
 
       if (!response.ok) {
@@ -212,10 +218,11 @@ export const cafeAPI = {
       const data = await response.json();
       return { success: true, data };
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('Error creating/updating order:', error);
       return { success: false, data: null };
     }
   },
+
 
   checkAuthAndBooking: async (): Promise<{
     isAuthenticated: boolean;

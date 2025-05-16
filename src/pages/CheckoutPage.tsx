@@ -31,54 +31,6 @@ export const CheckoutPage = () => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasPastOrders, setHasPastOrders] = useState(false);
 
-  // Helper to get or create a valid booking ID
-  const getValidBookingId = async () => {
-    let bookingId = localStorage.getItem('currentBookingId');
-    if (!bookingId) {
-      // If no bookingId, create a new booking
-      const now = new Date();
-      const bookingDetails = {
-        table_id: 'EX04', // Replace with actual table id if needed
-        booking_date: now.toISOString().slice(0, 10),
-        booking_time: now.toISOString(),
-        from_time: now.toISOString()
-      };
-      const newBookingResp = await cafeAPI.createBooking(bookingDetails);
-      if (newBookingResp && newBookingResp.id) {
-        bookingId = newBookingResp.id;
-        // localStorage.setItem('currentBookingId', bookingId);
-        return bookingId;
-      }
-      return null;
-    }
-
-    // Fetch booking status
-    const bookingResp = await cafeAPI.getBookingById();
-    const bookingData = Array.isArray(bookingResp.data) ? bookingResp.data[0] : bookingResp.data;
-    if (
-      !bookingResp.success ||
-      !bookingData ||
-      bookingData.is_cancelled === true ||
-      bookingData.is_completed === true
-    ) {
-      // Create new booking if cancelled or completed
-      const now = new Date();
-      const bookingDetails = {
-        table_id: 'EX04', // Replace with actual table id if needed
-        booking_date: now.toISOString().slice(0, 10),
-        booking_time: now.toISOString(),
-        from_time: now.toISOString()
-      };
-      const newBookingResp = await cafeAPI.createBooking(bookingDetails);
-      if (newBookingResp && newBookingResp.id) {
-        bookingId = newBookingResp.id;
-        return bookingId;
-      }
-      return null;
-    }
-    return bookingId;
-  };
-
   // Check for past orders on mount
   useEffect(() => {
     const checkPastOrders = async () => {
@@ -144,12 +96,9 @@ export const CheckoutPage = () => {
 
   const handleConfirmOrder = async () => {
     try {
-      const bookingId = await getValidBookingId();
-      if (!bookingId) throw new Error('No valid booking ID');
-
       const orderData = {
         table_id: 'EX04',  // Replace with actual table ID
-        booking_id: bookingId,  // Use valid booking ID
+        booking_id: localStorage.getItem('currentBookingId') || 'booking_123',
         items: orderItems.map(item => ({
           dish_id: item.id,
           quantity: item.quantity,
@@ -160,18 +109,20 @@ export const CheckoutPage = () => {
       const response = await cafeAPI.createOrder(orderData);
 
       if (response.success) {
-        localStorage.setItem('currentOrderId', response.data.data.id)
-        setOrderStatus('received')
-        navigate('/order-confirmation', { state: { orderItems } })
+        if (!localStorage.getItem('currentOrderId')) {
+          localStorage.setItem('currentOrderId', response.data.id);
+        }
+        setOrderStatus('received');
+        navigate('/order-confirmation', { state: { orderItems } });
       } else {
-        throw new Error('Failed to create order')
+        throw new Error('Failed to create/update order');
       }
     } catch (error) {
-      console.error('Error creating order:', error)
-      setShowNotification(true)
-      setTimeout(() => setShowNotification(false), 3000)
+      console.error('Error creating/updating order:', error);
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
     }
-  }
+  };
 
   return (
     <motion.div 

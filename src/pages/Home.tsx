@@ -21,17 +21,6 @@ interface OrderItem {
   instructions?: string
 }
 
-interface APIOrder {
-  id: string;
-  dish: {
-    name: string;
-    price: number;
-    picture: string;
-  };
-  quantity: number;
-  instructions?: string;
-}
-
 // Add banner interface
 interface BannerItem {
   id: string
