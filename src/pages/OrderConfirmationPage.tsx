@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
 import { cafeAPI } from '../libs/api/cafeAPI'
+import tableIcon from '../../public/table.png'
 
 interface OrderItem {
   id: string
@@ -154,9 +155,7 @@ export const OrderConfirmationPage = () => {
 
       <div className="bg-white rounded-3xl p-4">
         <div className="flex items-center mb-2">
-          <svg className="w-6 h-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
+        <img src={tableIcon} alt="Table" className="w-6 h-6 mr-2" />
           <h3 className="font-semibold">Table {tableNumber}</h3>
         </div>
         <div className="flex justify-between items-center font-semibold">
