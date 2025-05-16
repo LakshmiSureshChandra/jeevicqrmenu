@@ -1,5 +1,5 @@
 import { FC, useState, useEffect } from 'react'
-import { authAPI } from '../libs/api/cafeAPI'
+import { cafeAPI } from '../libs/api/cafeAPI'
 import { tokenUtils } from '../libs/utils/token'
 
 interface AuthOverlayProps {
@@ -15,7 +15,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
 
   useEffect(() => {
     // Check if there's a valid token on mount
-    if (authAPI.checkAuth()) {
+    if (cafeAPI.checkAuth()) {
       const token = tokenUtils.getToken()
       if (token) {
         onPhoneSignIn({ phone: `+91${phoneNumber}` })
@@ -26,12 +26,12 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
   const handleContinue = async () => {
     try {
       if (!showOTP) {
-        await authAPI.loginRequest(phoneNumber)
+        await cafeAPI.loginRequest(phoneNumber)
         setShowOTP(true)
         setTimer(30)
       } else {
         const otpString = otp.join('')
-        const response = await authAPI.verifyOTP(phoneNumber, otpString)
+        const response = await cafeAPI.verifyOTP(phoneNumber, otpString)
         if (response.access_token) {
           onPhoneSignIn({
             phone: `+91${phoneNumber}`
@@ -45,7 +45,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
 
   const handleResendOTP = async () => {
     try {
-      await authAPI.loginRequest(phoneNumber)
+      await cafeAPI.loginRequest(phoneNumber)
       setTimer(30)
     } catch (error) {
       console.error('Failed to resend OTP:', error)

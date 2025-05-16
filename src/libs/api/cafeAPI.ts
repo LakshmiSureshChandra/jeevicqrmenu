@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { tokenUtils } from '../utils/token'
+import { IDish } from './types' 
 
 const BASE_URL = 'https://41a5-103-90-211-86.ngrok-free.app'
 
@@ -59,7 +60,7 @@ interface VerifyOTPResponse {
   access_token: string
 }
 
-export const authAPI = {
+export const cafeAPI = {
   loginRequest: async (phoneNumber: string): Promise<LoginRequestResponse> => {
     try {
       const { data } = await apiClient.post('/cafe/auth/login-request', {
@@ -123,5 +124,43 @@ export const authAPI = {
       }
       throw error
     }
+  },
+
+  getCategoryItemCounts: async (): Promise<Record<string, number>> => {
+    try {
+      const { data } = await apiClient.get('/dish/dishes')
+      return data
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch category item counts')
+      }
+      throw error
+    }
+  },
+
+  getDishesByCategoryId: async (categoryId: string): Promise<IDish[]> => {
+    try {
+      const token = tokenUtils.getToken()
+      if (token) {
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await apiClient.get(`/dish/dishes/${categoryId}`)
+
+      console.log('Dishes response:', response)
+
+      if (response.data && Array.isArray(response.data)) {
+        return response.data
+      }
+
+      throw new Error('Invalid response format')
+    } catch (error) {
+      console.error('Error fetching dishes:', error)
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch dishes')
+      }
+      throw error
+    }
   }
 }
+

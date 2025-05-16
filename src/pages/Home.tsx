@@ -2,12 +2,13 @@ import { Banner } from '../components/Banner'
 import { SearchBar } from '../components/SearchBar'
 import CategoryGrid from '../components/CategoryGrid'
 import { AuthOverlay } from '../components/AuthOverlay'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useOrderStatus } from '../contexts/OrderContext'
-import { authAPI } from '../libs/api/cafeAPI'
+import { useCategories } from '../contexts/CategoryContext'
+import { cafeAPI } from '../libs/api/cafeAPI'
+import { IDishCategory } from '../libs/api/types'
 
 
 interface OrderItem {
@@ -20,15 +21,6 @@ interface OrderItem {
 }
 
 
-interface Category {
-  _type: string
-  id: string
-  name: string
-  picture: string
-  created_at: string
-  updated_at: string
-}
-
 // Add banner interface
 interface BannerItem {
   id: string
@@ -38,61 +30,44 @@ interface BannerItem {
   price: string
 }
 
+// Remove the Category interface and use IDishCategory instead
+
 export const Home = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showOrderStatus, setShowOrderStatus] = useState(false)
   const [showNotification, setShowNotification] = useState(false)
-  const [hasActiveOrder, setHasActiveOrder] = useState(false)
+  const [hasActiveOrder] = useState(false)
   const navigate = useNavigate()
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [orderItems, setOrderItems] = useState<OrderItem[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [orderItems] = useState<OrderItem[]>([])
   const { orderStatus } = useOrderStatus()
+  const { categories, setCategories, setCurrentCategory } = useCategories();
 
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const data = await authAPI.getCategories()
-        console.log('Categories data:', data)
-        setCategories(data)
+        const data = await cafeAPI.getCategories();
+        console.log('Categories data:', data);
+        // Convert string dates to Date objects
+        const formattedData = data.map((cat: any) => ({
+          ...cat,
+          created_at: new Date(cat.created_at),
+          updated_at: new Date(cat.updated_at)
+        }));
+        setCategories(formattedData);
       } catch (err) {
-        console.error('Error:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch categories')
-      } finally {
-        setLoading(false)
+        console.error('Error:', err);
       }
-    }
+    };
 
-    fetchCategories()
-  }, [])
+    fetchCategories();
+  }, [setCategories]);
 
-  // Handle order status
-  useEffect(() => {
-    const currentOrder = localStorage.getItem('currentOrder')
-    setHasActiveOrder(!!currentOrder)
-    if (currentOrder) {
-      const parsedOrder = JSON.parse(currentOrder)
-      setOrderItems(parsedOrder)
-    } else {
-      setOrderItems([])
-      setHasActiveOrder(false)
-    }
-  }, [orderStatus])
-
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
-  }
-
-  if (error) {
-    return <div className="text-red-500 text-center p-4">{error}</div>
-  }
+  // Update the navigation to use category ID
+  const handleCategoryClick = (categoryId: string) => {
+    setCurrentCategory(categoryId);
+    navigate(`/category/${categoryId}`);
+  };
 
   // Add banners data
   const banners: BannerItem[] = [
@@ -105,11 +80,6 @@ export const Home = () => {
     }
     // Add more banners as needed
   ]
-
-  // Update the navigation to use category ID instead of name
-  const handleCategoryClick = (categoryId: string) => {
-    navigate(`/category/${categoryId}`)
-  }
 
   return (
     <motion.div
@@ -133,7 +103,7 @@ export const Home = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-4"
         >
-          <SearchBar showFilter={false} onSearch={setSearchQuery} />
+          <SearchBar />
         </motion.div>
 
         <motion.div
@@ -142,12 +112,12 @@ export const Home = () => {
           transition={{ delay: 0.6, duration: 0.5 }}
         >
           <CategoryGrid 
-            categories={filteredCategories.map(cat => ({
+            categories={categories.map((cat: IDishCategory) => ({
               id: cat.id,
               name: cat.name,
-              image: cat.picture // Make sure to use picture instead of image
+              image: cat.picture
             }))}
-            onCategoryClick={(id) => handleCategoryClick(id)}
+            onCategoryClick={handleCategoryClick}
           />
         </motion.div>
       </div>

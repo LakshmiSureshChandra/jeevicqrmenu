@@ -5,6 +5,7 @@ import { Home } from './pages/Home'
 import { CategoryPage } from './pages/CategoryPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { OrderProvider } from './contexts/OrderContext'
+import { CategoryProvider } from './contexts/CategoryContext';
 
 function App() {
   const [isMobile, setIsMobile] = useState(false)
@@ -37,13 +38,15 @@ function App() {
 
   return (
     <OrderProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/category/:category" element={<CategoryPage />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
-        </Routes>
-      </Router>
+      <CategoryProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/category/:category" element={<CategoryPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+          </Routes>
+        </Router>
+      </CategoryProvider>
     </OrderProvider>
   )
 }
