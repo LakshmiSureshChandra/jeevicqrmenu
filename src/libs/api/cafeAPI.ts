@@ -206,8 +206,8 @@ export const cafeAPI = {
     try {
       const currentOrderId = localStorage.getItem('currentOrderId');
       const url = currentOrderId
-        ? `https://41a5-103-90-211-86.ngrok-free.app/dine-in/orders/${currentOrderId}`
-        : 'https://41a5-103-90-211-86.ngrok-free.app/dine-in/orders';
+        ? `${BASE_URL}/dine-in/orders/${currentOrderId}`
+        : `${BASE_URL}/dine-in/orders`;
       const method = currentOrderId ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {
@@ -227,6 +227,16 @@ export const cafeAPI = {
       return { success: true, data };
     } catch (error) {
       console.error('Error creating/updating order:', error);
+      return { success: false, data: null };
+    }
+  },
+
+  updateOrderStatus: async (orderId: string, status: string): Promise<{ success: boolean; data: any }> => {
+    try {
+      const response = await apiClient.patch(`/dine-in/orders/${orderId}`, { status });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error updating order status:', error);
       return { success: false, data: null };
     }
   },

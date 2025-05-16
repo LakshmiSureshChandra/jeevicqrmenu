@@ -98,7 +98,7 @@ export const CheckoutPage = () => {
     try {
       const orderData = {
         table_id: 'EX04', 
-        booking_id: localStorage.getItem('currentBookingId') || 'booking_123',
+        booking_id: localStorage.getItem('currentBookingId') || '',
         items: orderItems.map(item => ({
           dish_id: item.id,
           quantity: item.quantity,

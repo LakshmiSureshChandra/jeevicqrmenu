@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 
-type OrderStatus = 'preparing' | 'received' | 'completed'
+type OrderStatus = 'pending' | 'served' | 'ready' | 'preparing' | 'cancelled' | 'received'
 
 interface OrderContextType {
   orderStatus: OrderStatus
@@ -10,7 +10,7 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined)
 
 export function OrderProvider({ children }: { children: ReactNode }) {
-  const [orderStatus, setOrderStatus] = useState<OrderStatus>('preparing')
+  const [orderStatus, setOrderStatus] = useState<OrderStatus>('pending')
 
   return (
     <OrderContext.Provider value={{ orderStatus, setOrderStatus }}>

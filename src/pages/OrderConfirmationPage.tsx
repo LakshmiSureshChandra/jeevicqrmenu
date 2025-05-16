@@ -110,7 +110,7 @@ export const OrderConfirmationPage = () => {
       await cafeAPI.submitRatings(ratings)
 
       // Clear local storage
-    //   localStorage.clear()
+      localStorage.clear()
 
       setIsFinished(true)
       setShowRatingDialog(false)
