@@ -324,12 +324,20 @@ export const cafeAPI = {
       const response = await apiClient.post('/dine-in/assistance', {
         table_number: tableNumber
       });
+      console.log(response)
       
       return { success: true, data: response.data };
     } catch (error) {
       console.error('Error requesting assistance:', error);
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || 'Failed to request assistance');
+        const status = error.response?.status;
+        const message = error.response?.data?.data.message || 'Failed to request assistance';
+
+        if (status === 400) {
+          console.warn('Bad Request:', message);
+        }
+
+        throw new Error(message);
       }
       return { success: false, data: null };
     }
