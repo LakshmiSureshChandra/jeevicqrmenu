@@ -29,8 +29,13 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
     }
   }, [])
 
+  // Add this with other state declarations at the top
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Update handleContinue function
   const handleContinue = async () => {
     try {
+      setIsLoading(true)
       if (!showOTP) {
         await cafeAPI.loginRequest(phoneNumber)
         setShowOTP(true)
@@ -39,7 +44,6 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
         const otpString = otp.join('')
         const response = await cafeAPI.verifyOTP(phoneNumber, otpString)
         if (response.access_token) {
-          // OTP verified successfully, now create the booking
           try {
             const now = new Date()
             const formattedDate = now.toISOString().split('T')[0]
@@ -51,9 +55,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
               booking_time: formattedTime,
               from_time: formattedTime
             })
-            console.log('Booking created:', bookingResponse)
             
-            // Store the booking ID in local storage
             if (bookingResponse.success && bookingResponse.data && bookingResponse.data.id) {
               localStorage.setItem('currentBookingId', bookingResponse.data.id)
             }
@@ -63,16 +65,15 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             })
           } catch (bookingError) {
             console.error('Failed to create booking:', bookingError)
-            // Handle booking creation error (e.g., show an error message to the user)
           }
         }
       }
     } catch (error) {
       console.error('Authentication error:', error)
-      // Handle authentication error (e.g., show an error message to the user)
+    } finally {
+      setIsLoading(false)
     }
   }
-
   const handleResendOTP = async () => {
     try {
       await cafeAPI.loginRequest(phoneNumber)
@@ -202,11 +203,38 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             </a>
           </p> */}
 
-          <button
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium"
+<button
+            className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium disabled:opacity-70 relative"
             onClick={handleContinue}
+            disabled={isLoading}
           >
-            {showOTP ? 'Confirm' : 'Continue'}
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <svg 
+                  className="animate-spin h-5 w-5 text-white" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                >
+                  <circle 
+                    className="opacity-25" 
+                    cx="12" 
+                    cy="12" 
+                    r="10" 
+                    stroke="currentColor" 
+                    strokeWidth="4"
+                  />
+                  <path 
+                    className="opacity-75" 
+                    fill="currentColor" 
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span>{showOTP ? 'Verifying...' : 'Sending OTP...'}</span>
+              </div>
+            ) : (
+              <span>{showOTP ? 'Confirm' : 'Continue'}</span>
+            )}
           </button>
         </div>
       </div>

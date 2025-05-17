@@ -57,7 +57,7 @@ export const OrderConfirmationPage = () => {
           });
 
           // Ensure you are accessing the correct property for table number
-          const tableNumber =  '243'; // Verify if table_id is correct
+          const tableNumber =  'EX02'; // Verify if table_id is correct
           setOrderItems(mappedOrderItems);
           setTableNumber(tableNumber);
         } else {
@@ -76,11 +76,49 @@ export const OrderConfirmationPage = () => {
 
   const totalBill = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
-  const handleRequestAssistance = () => {
-    setShowNotification(true)
-    setTimeout(() => setShowNotification(false), 3000)
-  }
+  // Add this state near other state declarations
+  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
 
+  // Update the handleRequestAssistance function
+  const handleRequestAssistance = async () => {
+    try {
+      const tableId = localStorage.getItem('currentTableId') || 'EX04';
+      const response = await cafeAPI.requestAssistance(tableId);
+      
+      if (!response.success) {
+        setNotificationMessage(response.data?.message || 'Failed to request assistance');
+      } else {
+        setNotificationMessage('Your assistance is on the way!');
+      }
+      
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+        setNotificationMessage('Your assistance is on the way!'); // Reset message
+      }, 3000);
+    } catch (error) {
+      console.error('Error requesting assistance:', error);
+      setNotificationMessage('Failed to request assistance');
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+        setNotificationMessage('Your assistance is on the way!'); // Reset message
+      }, 3000);
+    }
+  };
+
+  // Update the notification toast to use the message
+  {showNotification && (
+    <motion.div
+      initial={{ y: -50, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: -50, opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+    >
+      {notificationMessage}
+    </motion.div>
+  )}
   const [isFinished, setIsFinished] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showRatingDialog, setShowRatingDialog] = useState(false)
@@ -104,26 +142,47 @@ export const OrderConfirmationPage = () => {
     setRatings(prev => ({ ...prev, [id]: rating }))
   }
 
+  // Add this near other useEffect hooks
+  useEffect(() => {
+    if (showRatingDialog) {
+      // Prevent going back when rating dialog is shown
+      window.history.pushState(null, '', window.location.pathname);
+      const handlePopState = (event: PopStateEvent) => {
+        event.preventDefault();
+        window.history.pushState(null, '', window.location.pathname);
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      return () => window.removeEventListener('popstate', handlePopState);
+    }
+  }, [showRatingDialog]);
+
   const handleConfirmRatings = async () => {
     try {
       // Push ratings to backend
-      await cafeAPI.submitRatings(ratings)
+      await cafeAPI.submitRatings(ratings);
+
+      // Create checkout
+      const bookingId = localStorage.getItem('currentBookingId');
+      if (bookingId) {
+        await cafeAPI.createCheckout(bookingId);
+      }
 
       // Clear local storage
-      localStorage.clear()
+      // localStorage.clear();
 
-      setIsFinished(true)
-      setShowRatingDialog(false)
-      setShowNotification(true)
+      setIsFinished(true);
+      setShowRatingDialog(false);
+      setShowNotification(true);
       setTimeout(() => {
-        setShowNotification(false)
-        navigate('/thank-you')  // Navigate to thank you page after notification
-      })
+        setShowNotification(false);
+        navigate('/thank-you', { replace: true }); // Using replace to prevent going back
+      }, 3000);
     } catch (error) {
-      console.error('Error submitting ratings:', error)
-      setError('Failed to submit ratings. Please try again.')
+      console.error('Error submitting ratings:', error);
+      setError('Failed to submit ratings. Please try again.');
     }
-  }
+  };
 
   // Get unique dishes
   const uniqueDishes = Array.from(new Set(orderItems.map(item => item.id)))

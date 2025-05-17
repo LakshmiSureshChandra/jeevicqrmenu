@@ -40,24 +40,7 @@ export const Home = () => {
   const navigate = useNavigate()
   const { categories, setCategories, setCurrentCategory } = useCategories();
   const [banners, setBanners] = useState<BannerItem[]>([])
-  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
-
-  // Modify the fetchBanners function to be more reusable
-  const fetchBanners = useCallback(async () => {
-    try {
-      const bannerData = await cafeAPI.getBanners()
-      setBanners(bannerData)
-    } catch (error) {
-      console.error('Error fetching banners:', error)
-    }
-  }, [])
-
-  // Update the useEffect for fetching banners
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchBanners()
-    }
-  }, [isAuthenticated, fetchBanners])
+  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!');
 
   // Fetch categories
   useEffect(() => {
@@ -200,34 +183,36 @@ export const Home = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [categoriesData, dishesData] = await Promise.all([
-        cafeAPI.getCategories(),
-        cafeAPI.getDishes()
-      ]);
-
-      const formattedCategories = categoriesData.map((cat: any) => ({
-        ...cat,
-        created_at: new Date(cat.created_at),
-        updated_at: new Date(cat.updated_at)
-      }));
-
-      setCategories(formattedCategories);
-      setDishes(dishesData);
-
-      // Check for active order after fetching dishes
+      // Check authentication first
       const checkAuthAndBookingResult = await cafeAPI.checkAuthAndBooking();
       setIsAuthenticated(checkAuthAndBookingResult.isAuthenticated);
       
-      // Fetch banners after authentication
       if (checkAuthAndBookingResult.isAuthenticated) {
-        fetchBanners();
+        // If authenticated, fetch all data in parallel
+        const [categoriesData, dishesData, bannerData] = await Promise.all([
+          cafeAPI.getCategories(),
+          cafeAPI.getDishes(),
+          cafeAPI.getBanners()
+        ]);
+
+        // Set banners
+        setBanners(bannerData);
+
+        // Set categories
+        const formattedCategories = categoriesData.map((cat: any) => ({
+          ...cat,
+          created_at: new Date(cat.created_at),
+          updated_at: new Date(cat.updated_at)
+        }));
+        setCategories(formattedCategories);
+
+        // Set dishes
+        setDishes(dishesData);
       }
-      
-      // ... rest of the checkAuthAndBooking logic
     } catch (err) {
       console.error('Error fetching data:', err);
     }
-  }, [setCategories, setDishes, fetchBanners]);
+  }, [setCategories]);
 
   useEffect(() => {
     fetchData();
@@ -490,15 +475,38 @@ export const Home = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       {!isAuthenticated && (
-        <AuthOverlay
-          onPhoneSignIn={() => {
-            setIsAuthenticated(true);
-            fetchData(); // This will now also fetch banners
-          }}
-        />
-      )}
+    <AuthOverlay
+      onPhoneSignIn={async () => {
+        try {
+          setIsAuthenticated(true);
+          
+          // Fetch all data immediately after authentication
+          const [categoriesData, dishesData, bannerData] = await Promise.all([
+            cafeAPI.getCategories(),
+            cafeAPI.getDishes(),
+            cafeAPI.getBanners()
+          ]);
+
+          // Set all data states immediately
+          setBanners(bannerData || []);
+          setDishes(dishesData || []);
+          
+          const formattedCategories = (categoriesData || []).map((cat: any) => ({
+            ...cat,
+            created_at: new Date(cat.created_at),
+            updated_at: new Date(cat.updated_at)
+          }));
+          setCategories(formattedCategories);
+          
+        } catch (error) {
+          console.error('Error fetching initial data:', error);
+          // Optionally handle the error state here
+        }
+      }}
+    />
+  )}
     </motion.div>
   )
 }

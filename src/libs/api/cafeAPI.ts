@@ -342,5 +342,16 @@ export const cafeAPI = {
       return { success: false, data: null };
     }
   },
+  createCheckout: async (bookingId: string): Promise<{ success: boolean; data: any }> => {
+    try {
+      const response = await apiClient.post('/dine-in/checkouts', {
+        booking_id: bookingId
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+      return { success: false, data: null };
+    }
+  },
 }
 

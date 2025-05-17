@@ -30,6 +30,7 @@ export const CheckoutPage = () => {
   const [showNotification, setShowNotification] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasPastOrders, setHasPastOrders] = useState(false);
+  const [notificationMessage,] = useState('Your assistance is on the way!')
 
   // Check for past orders on mount
   useEffect(() => {
@@ -97,7 +98,7 @@ export const CheckoutPage = () => {
   const handleConfirmOrder = async () => {
     try {
       const orderData = {
-        table_id: 'EX04', 
+        table_id: 'EX02', 
         booking_id: localStorage.getItem('currentBookingId') || '',
         items: orderItems.map(item => ({
           dish_id: item.id,
@@ -295,14 +296,14 @@ export const CheckoutPage = () => {
       {/* Themed Notification */}
       <AnimatePresence>
         {showNotification && (
-          <motion.div 
+          <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
           >
-            Your assistance is on the way!
+            {notificationMessage}
           </motion.div>
         )}
       </AnimatePresence>
