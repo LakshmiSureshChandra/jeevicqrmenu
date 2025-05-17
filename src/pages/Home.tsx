@@ -36,11 +36,11 @@ export const Home = () => {
   const [hasActiveOrder, setHasActiveOrder] = useState(false)
   const [dishes, setDishes] = useState<IDish[]>([]);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
-  const { orderStatus } = useOrderStatus()
   const navigate = useNavigate()
   const { categories, setCategories, setCurrentCategory } = useCategories();
   const [banners, setBanners] = useState<BannerItem[]>([])
   const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!');
+  const { orderStatus, setOrderStatus } = useOrderStatus();
 
   // Fetch categories
   useEffect(() => {
@@ -61,6 +61,46 @@ export const Home = () => {
 
     fetchCategories();
   }, [setCategories]);
+
+  useEffect(() => {
+    let intervalId: ReturnType<typeof setInterval>;
+
+    const pollOrderStatus = async () => {
+      const storedOrderId = localStorage.getItem('currentOrderId');
+      if (storedOrderId && hasActiveOrder) {
+        try {
+          const orderDetails = await cafeAPI.getOrdersByID();
+          const orderData = orderDetails.data;
+
+          let currentOrder = null;
+          if (Array.isArray(orderData)) {
+            currentOrder = orderData.find(order => order.id === storedOrderId);
+          } else {
+            currentOrder = orderData;
+          }
+
+          if (currentOrder && currentOrder.order_status) {
+            setOrderStatus(currentOrder.order_status);
+          }
+        } catch (error) {
+          console.error('Error polling order status:', error);
+        }
+      }
+    };
+
+    if (hasActiveOrder) {
+      intervalId = setInterval(pollOrderStatus, 5000);
+      // Initial poll
+      pollOrderStatus();
+    }
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [hasActiveOrder, setOrderStatus]);
+
   useEffect(() => {
     const fetchDishes = async () => {
       try {
@@ -77,6 +117,19 @@ export const Home = () => {
     setCurrentCategory(categoryId);
     navigate(`/category/${categoryId}`);
   };
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const data = await cafeAPI.getBanners();
+        setBanners(data);
+      } catch (err) {
+        console.error('Error fetching banners:', err);
+      }
+    };
+
+    fetchBanners();
+  }, []);
 
   // Check for active order
   useEffect(() => {
@@ -103,12 +156,13 @@ export const Home = () => {
           }
           if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
             setHasActiveOrder(true);
-           
+            setOrderStatus(currentOrder.order_status);
+
 
             setOrderItems(
               (currentOrder.items || []).map((item: any) => {
                 const dish = dishes.find(d => d.id === item.dish_id);
-             
+
                 return {
                   id: item.dish_id,
                   name: dish ? dish.name : item.dish_id,
@@ -119,7 +173,7 @@ export const Home = () => {
                 };
               })
             );
-           
+
             return;
           }
         } catch (error) {
@@ -155,7 +209,7 @@ export const Home = () => {
           // No current order found, create a new booking
           const now = new Date();
           const bookingDetails = {
-            table_id: 'EX04', // Replace with actual table id if needed
+            table_id: 'EX02', // Replace with actual table id if needed
             booking_date: now.toISOString(),
             booking_time: now.toISOString(),
             from_time: now.toISOString()
@@ -186,7 +240,7 @@ export const Home = () => {
       // Check authentication first
       const checkAuthAndBookingResult = await cafeAPI.checkAuthAndBooking();
       setIsAuthenticated(checkAuthAndBookingResult.isAuthenticated);
-      
+
       if (checkAuthAndBookingResult.isAuthenticated) {
         // If authenticated, fetch all data in parallel
         const [categoriesData, dishesData, bannerData] = await Promise.all([
@@ -289,7 +343,7 @@ export const Home = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
         >
-          <CategoryGrid 
+          <CategoryGrid
             categories={categories.map((cat: IDishCategory) => ({
               id: cat.id,
               name: cat.name,
@@ -343,35 +397,43 @@ export const Home = () => {
 
           {/* Order Status Drawer */}
           <div
-            className={`fixed right-0 top-[20%] w-[90%] max-w-sm bg-white shadow-lg rounded-l-2xl z-50 transform transition-transform duration-300 ease-in-out h-[70vh] ${
-              showOrderStatus ? 'translate-x-0' : 'translate-x-full'
-            }`}
+            className={`fixed right-0 top-[20%] w-[90%] max-w-sm bg-white shadow-lg rounded-l-2xl z-50 transform transition-transform duration-300 ease-in-out h-[70vh] ${showOrderStatus ? 'translate-x-0' : 'translate-x-full'
+              }`}
           >
             <div className="p-4 h-full flex flex-col">
               <div className="flex items-center justify-center mb-4">
+                {/* Order Status Drawer content */}
                 <div className="flex flex-col items-center">
-                  {orderStatus === 'received' ? (
-                    <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-2">
+                  {orderStatus === 'cancelled' ? (
+                    <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-2">
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-                        <path d="M20 6L9 17l-5-5" />
+                        <path d="M18 6L6 18M6 6l12 12" />
                       </svg>
                     </div>
                   ) : (
-                    <div className="w-16 h-16 flex items-center justify-center mb-2">
+                    <div className="w-24 h-24 flex items-center justify-center mb-2">
                       <img
-                        src="/orderpreparing.png"
-                        alt="Preparing Order"
-                        className="w-16 h-16 object-contain"
+                        src={`/${orderStatus}.gif`}
+                        alt={`${orderStatus} status`}
+                        className={`w-18 h-18 object-contain `}
                       />
                     </div>
                   )}
                   <h3 className="text-xl font-semibold text-orange-500">
-                    {orderStatus === 'received' ? 'Order Received' : 'Preparing'}
+                    {orderStatus === 'pending' ? 'Order Received' :
+                      orderStatus === 'received' ? 'Order Received' :
+                        orderStatus === 'preparing' ? 'Preparing Your Order' :
+                          orderStatus === 'ready' ? 'Ready to Serve' :
+                            orderStatus === 'cancelled' ? 'Order Cancelled' :
+                              'Processing Order'}
                   </h3>
                   <p className="text-center text-sm text-gray-600 mt-1">
-                    {orderStatus === 'received'
-                      ? 'Your order has been received and will be delivered soon!'
-                      : 'Your order has been received and our chefs will start preparing your order soon!'}
+                    {orderStatus === 'pending' ? 'We have received your order!' :
+                      orderStatus === 'received' ? 'We have received your order!' :
+                        orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
+                          orderStatus === 'ready' ? 'Your order is ready to be served!' :
+                            orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
+                              'Processing your order...'}
                   </p>
                 </div>
               </div>
@@ -421,14 +483,14 @@ export const Home = () => {
         <button
           onClick={async () => {
             try {
-              const tableId = localStorage.getItem('currentTableId') || 'EX04';
+              const tableId = localStorage.getItem('currentTableId') || 'EX02';
               const response = await cafeAPI.requestAssistance(tableId);
               if (response.data.success === false) {
                 setNotificationMessage(response.data.message); // Use the message from response
               } else {
                 setNotificationMessage('Your assistance is on the way!');
               }
-              
+
               setShowNotification(true);
               setTimeout(() => {
                 setShowNotification(false);
@@ -475,38 +537,35 @@ export const Home = () => {
           </motion.div>
         )}
       </AnimatePresence>
-      
-      {!isAuthenticated && (
-    <AuthOverlay
-      onPhoneSignIn={async () => {
-        try {
-          setIsAuthenticated(true);
-          
-          // Fetch all data immediately after authentication
-          const [categoriesData, dishesData, bannerData] = await Promise.all([
-            cafeAPI.getCategories(),
-            cafeAPI.getDishes(),
-            cafeAPI.getBanners()
-          ]);
 
-          // Set all data states immediately
-          setBanners(bannerData || []);
-          setDishes(dishesData || []);
-          
-          const formattedCategories = (categoriesData || []).map((cat: any) => ({
-            ...cat,
-            created_at: new Date(cat.created_at),
-            updated_at: new Date(cat.updated_at)
-          }));
-          setCategories(formattedCategories);
-          
-        } catch (error) {
-          console.error('Error fetching initial data:', error);
-          // Optionally handle the error state here
-        }
-      }}
-    />
-  )}
+      {!isAuthenticated && (
+        <AuthOverlay
+          onPhoneSignIn={async () => {
+            setIsAuthenticated(true);
+            try {
+              // Fetch all data in parallel
+              const [bannersData, categoriesData, dishesData] = await Promise.all([
+                cafeAPI.getBanners(),
+                cafeAPI.getCategories(),
+                cafeAPI.getDishes()
+              ]);
+
+              // Update all states
+              setBanners(bannersData);
+              setDishes(dishesData);
+
+              const formattedCategories = categoriesData.map((cat: any) => ({
+                ...cat,
+                created_at: new Date(cat.created_at),
+                updated_at: new Date(cat.updated_at)
+              }));
+              setCategories(formattedCategories);
+            } catch (error) {
+              console.error('Error fetching data after auth:', error);
+            }
+          }}
+        />
+      )}
     </motion.div>
   )
 }

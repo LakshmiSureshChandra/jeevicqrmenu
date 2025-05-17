@@ -19,7 +19,6 @@ import { useEffect } from 'react'
 export const CheckoutPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { setOrderStatus } = useOrderStatus()
 
   const [orderItems, setOrderItems] = useState<OrderItem[]>(() => {
     return location.state?.items || []
@@ -31,6 +30,85 @@ export const CheckoutPage = () => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasPastOrders, setHasPastOrders] = useState(false);
   const [notificationMessage,] = useState('Your assistance is on the way!')
+  const { orderStatus, setOrderStatus } = useOrderStatus();
+  const [orderStatusPolling, setOrderStatusPolling] = useState<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const pollOrderStatus = async () => {
+      const orderId = localStorage.getItem('currentOrderId');
+      if (orderId) {
+        try {
+          const orderDetails = await cafeAPI.getOrdersByID();
+          const orderData = orderDetails.data;
+          
+          let currentOrder = null;
+          if (Array.isArray(orderData)) {
+            currentOrder = orderData.find(order => order.id === orderId);
+          } else {
+            currentOrder = orderData;
+          }
+  
+          if (currentOrder && currentOrder.order_status) {
+            setOrderStatus(currentOrder.order_status);
+          }
+        } catch (error) {
+          console.error('Error polling order status:', error);
+        }
+      }
+    };
+  
+    // Start polling when order is confirmed
+    if (orderStatus !== 'cancelled') {
+      const intervalId = setInterval(pollOrderStatus, 10000); // Poll every 10 seconds
+      setOrderStatusPolling(intervalId);
+    }
+  
+    return () => {
+      if (orderStatusPolling) {
+        clearInterval(orderStatusPolling);
+      }
+    };
+  }, [orderStatus, setOrderStatus]);
+
+  const OrderStatusDisplay = () => {
+    return (
+      <div className="bg-white rounded-3xl p-4 mb-4">
+        <div className="flex flex-col items-center">
+          {orderStatus === 'cancelled' ? (
+            <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-2">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </div>
+          ) : (
+            <div className="w-24 h-24 flex items-center justify-center mb-2">
+              <img
+                src={`/${orderStatus}.gif`}
+                alt={`${orderStatus} status`}
+                className={`w-18 h-18 object-contain `}
+              />
+            </div>
+          )}
+          <h3 className="text-xl font-semibold text-orange-500">
+            {orderStatus === 'pending' ? 'Order Received' :
+             orderStatus === 'received' ? 'Order Received' :
+             orderStatus === 'preparing' ? 'Preparing Your Order' :
+             orderStatus === 'ready' ? 'Ready to Serve' :
+             orderStatus === 'cancelled' ? 'Order Cancelled' :
+             'Processing Order'}
+          </h3>
+          <p className="text-center text-sm text-gray-600 mt-1">
+            {orderStatus === 'pending' ? 'We have received your order!' :
+             orderStatus === 'received' ? 'We have received your order!' :
+             orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
+             orderStatus === 'ready' ? 'Your order is ready to be served!' :
+             orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
+             'Processing your order...'}
+          </p>
+        </div>
+      </div>
+    );
+  };
 
   // Check for past orders on mount
   useEffect(() => {
@@ -133,6 +211,7 @@ export const CheckoutPage = () => {
       className="min-h-screen bg-gray-50 flex flex-col"
     >
       <div className="flex-1 p-4 space-y-4">
+      {orderStatus && <OrderStatusDisplay />}
         <AnimatePresence>
           {orderItems.map((item, index) => (
             <motion.div 
@@ -224,7 +303,7 @@ export const CheckoutPage = () => {
                 </svg>
                 <div>
                   <div className="text-gray-400">Table</div>
-                  <div className="text-xl font-medium">EX04</div>
+                  <div className="text-xl font-medium">EX02</div>
                 </div>
               </div>
               <div>

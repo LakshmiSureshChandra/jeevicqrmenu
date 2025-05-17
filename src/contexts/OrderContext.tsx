@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, ReactNode } from 'react'
 
-type OrderStatus = 'pending' | 'served' | 'ready' | 'preparing' | 'cancelled' | 'received'
+type OrderStatus = 'pending' | 'served' | 'ready' | 'preparing' | 'cancelled' | 'received' | string;
 
 interface OrderContextType {
   orderStatus: OrderStatus
@@ -19,10 +19,10 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   )
 }
 
-export function useOrderStatus() {
-  const context = useContext(OrderContext)
-  if (context === undefined) {
-    throw new Error('useOrderStatus must be used within an OrderProvider')
+export const useOrderStatus = () => {
+  const context = useContext(OrderContext); // Changed from OrderStatusContext to OrderContext
+  if (!context) {
+    throw new Error('useOrderStatus must be used within an OrderStatusProvider');
   }
-  return context
-}
+  return context; // Return the entire context instead of destructuring
+};

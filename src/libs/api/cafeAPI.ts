@@ -311,11 +311,11 @@ export const cafeAPI = {
   },
   getBanners: async (): Promise<BannerItem[]> => {
     try {
-      const response = await apiClient.get('/banner');
-      return response.data;
+      const { data } = await apiClient.get('/banner')
+      return data
     } catch (error) {
-      console.error('Error fetching banners:', error);
-      throw error;
+      console.error('Error fetching banners:', error)
+      return []
     }
   },
 

@@ -17,13 +17,14 @@ interface OrderItem {
 
 export const OrderConfirmationPage = () => {
   const navigate = useNavigate()
-  const { setOrderStatus } = useOrderStatus()
+  const { orderStatus, setOrderStatus } = useOrderStatus()
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
   const [showNotification, setShowNotification] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [, setDishes] = useState<any[]>([])
+  const [orderStatusPolling, setOrderStatusPolling] = useState<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -82,7 +83,7 @@ export const OrderConfirmationPage = () => {
   // Update the handleRequestAssistance function
   const handleRequestAssistance = async () => {
     try {
-      const tableId = localStorage.getItem('currentTableId') || 'EX04';
+      const tableId = localStorage.getItem('currentTableId') || 'EX02';
       const response = await cafeAPI.requestAssistance(tableId);
       
       if (!response.success) {
@@ -106,6 +107,8 @@ export const OrderConfirmationPage = () => {
       }, 3000);
     }
   };
+
+
 
   // Update the notification toast to use the message
   {showNotification && (
@@ -142,6 +145,43 @@ export const OrderConfirmationPage = () => {
     setRatings(prev => ({ ...prev, [id]: rating }))
   }
 
+  useEffect(() => {
+    const pollOrderStatus = async () => {
+      const orderId = localStorage.getItem('currentOrderId');
+      if (orderId) {
+        try {
+          const orderDetails = await cafeAPI.getOrdersByID();
+          const orderData = orderDetails.data;
+          
+          let currentOrder = null;
+          if (Array.isArray(orderData)) {
+            currentOrder = orderData.find(order => order.id === orderId);
+          } else {
+            currentOrder = orderData;
+          }
+
+          if (currentOrder && currentOrder.order_status) {
+            setOrderStatus(currentOrder.order_status);
+          }
+        } catch (error) {
+          console.error('Error polling order status:', error);
+        }
+      }
+    };
+
+    // Start polling when component mounts
+    const intervalId = setInterval(pollOrderStatus, 10000);
+    setOrderStatusPolling(intervalId);
+    // Initial poll
+    pollOrderStatus();
+
+    return () => {
+      if (orderStatusPolling) {
+        clearInterval(orderStatusPolling);
+      }
+    };
+  }, [setOrderStatus]);
+
   // Add this near other useEffect hooks
   useEffect(() => {
     if (showRatingDialog) {
@@ -177,7 +217,7 @@ export const OrderConfirmationPage = () => {
       setTimeout(() => {
         setShowNotification(false);
         navigate('/thank-you', { replace: true }); // Using replace to prevent going back
-      }, 3000);
+      }, 100);
     } catch (error) {
       console.error('Error submitting ratings:', error);
       setError('Failed to submit ratings. Please try again.');
@@ -189,6 +229,42 @@ export const OrderConfirmationPage = () => {
     .map(id => orderItems.find(item => item.id === id))
     .filter((item): item is OrderItem => item !== undefined)
 
+    const OrderStatusDisplay = () => (
+      <div className="bg-white rounded-3xl p-6 text-center mb-6">
+        {orderStatus === 'cancelled' ? (
+          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        ) : (
+          <div className="w-24 h-24 flex items-center justify-center mx-auto mb-4">
+            <img
+              src={`/${orderStatus}.gif`}
+              alt={`${orderStatus} status`}
+              className={`w-18 h-18 object-contain `}
+            />
+          </div>
+        )}
+        <h2 className="text-2xl font-semibold text-orange-500 mb-2">
+          {orderStatus === 'pending' ? 'Order Received' :
+           orderStatus === 'received' ? 'Order Received' :
+           orderStatus === 'preparing' ? 'Preparing Your Order' :
+           orderStatus === 'ready' ? 'Ready to Serve' :
+           orderStatus === 'cancelled' ? 'Order Cancelled' :
+           'Processing Order'}
+        </h2>
+        <p className="text-gray-600">
+          {orderStatus === 'pending' ? 'We have received your order!' :
+           orderStatus === 'received' ? 'We have received your order!' :
+           orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
+           orderStatus === 'ready' ? 'Your order is ready to be served!' :
+           orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
+           'Processing your order...'}
+        </p>
+      </div>
+    )
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -196,15 +272,7 @@ export const OrderConfirmationPage = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gray-50 flex flex-col p-4"
     >
-      <div className="bg-white rounded-3xl p-6 text-center mb-6">
-        <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-semibold text-orange-500 mb-2">Order Received</h2>
-        <p className="text-gray-600">Your Order has been received and our chefs will start preparing your order soon!</p>
-      </div>
+      <OrderStatusDisplay />
 
       <div className="bg-white rounded-3xl p-4 mb-6">
         {orderItems.map((item) => (
