@@ -40,6 +40,7 @@ export const Home = () => {
   const navigate = useNavigate()
   const { categories, setCategories, setCurrentCategory } = useCategories();
   const [banners, setBanners] = useState<BannerItem[]>([])
+  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
 
   // Modify the fetchBanners function to be more reusable
   const fetchBanners = useCallback(async () => {
@@ -433,9 +434,30 @@ export const Home = () => {
       {/* Assistance Button */}
       <div className="fixed right-4 bottom-4 z-50">
         <button
-          onClick={() => {
-            setShowNotification(true)
-            setTimeout(() => setShowNotification(false), 3000)
+          onClick={async () => {
+            try {
+              const tableId = localStorage.getItem('currentTableId') || 'EX04';
+              const response = await cafeAPI.requestAssistance(tableId);
+              if (response.data.success === false) {
+                setNotificationMessage(response.data.message); // Use the message from response
+              } else {
+                setNotificationMessage('Your assistance is on the way!');
+              }
+              
+              setShowNotification(true);
+              setTimeout(() => {
+                setShowNotification(false);
+                setNotificationMessage('Your assistance is on the way!'); // Reset message
+              }, 3000);
+            } catch (error) {
+              console.error('Error requesting assistance:', error);
+              setNotificationMessage('Failed to request assistance');
+              setShowNotification(true);
+              setTimeout(() => {
+                setShowNotification(false);
+                setNotificationMessage('Your assistance is on the way!'); // Reset message
+              }, 3000);
+            }
           }}
           className="w-14 h-14 bg-orange-500 rounded-full flex items-center justify-center shadow-lg hover:bg-orange-600 transition-colors"
         >
@@ -454,7 +476,7 @@ export const Home = () => {
         </button>
       </div>
 
-      {/* Notification Toast */}
+      {/* Update the Notification Toast to use dynamic message */}
       <AnimatePresence>
         {showNotification && (
           <motion.div
@@ -464,7 +486,7 @@ export const Home = () => {
             transition={{ duration: 0.3 }}
             className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
           >
-            Your assistance is on the way!
+            {notificationMessage}
           </motion.div>
         )}
       </AnimatePresence>

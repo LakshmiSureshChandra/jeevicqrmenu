@@ -3,7 +3,7 @@ import { tokenUtils } from '../utils/token'
 import { IDish } from './types' 
 import { IDineInOrders } from './types';
 
-const BASE_URL = 'https://41a5-103-90-211-86.ngrok-free.app'
+const BASE_URL = 'https://d3a2-103-90-211-86.ngrok-free.app'
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -316,6 +316,22 @@ export const cafeAPI = {
     } catch (error) {
       console.error('Error fetching banners:', error);
       throw error;
+    }
+  },
+
+  requestAssistance: async (tableNumber: string): Promise<{ success: boolean; data: any }> => {
+    try {
+      const response = await apiClient.post('/dine-in/assistance', {
+        table_number: tableNumber
+      });
+      
+      return { success: true, data: response.data };
+    } catch (error) {
+      console.error('Error requesting assistance:', error);
+      if (axios.isAxiosError(error)) {
+        throw new Error(error.response?.data?.message || 'Failed to request assistance');
+      }
+      return { success: false, data: null };
     }
   },
 }
