@@ -3,7 +3,7 @@ import { tokenUtils } from '../utils/token'
 import { IDish } from './types' 
 import { IDineInOrders } from './types';
 
-const BASE_URL = 'https://d3a2-103-90-211-86.ngrok-free.app'
+const BASE_URL = 'https://0a7f-103-90-211-86.ngrok-free.app'
 
 // Create axios instance with default config
 const apiClient = axios.create({

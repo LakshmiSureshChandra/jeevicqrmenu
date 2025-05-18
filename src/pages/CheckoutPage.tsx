@@ -40,14 +40,14 @@ export const CheckoutPage = () => {
         try {
           const orderDetails = await cafeAPI.getOrdersByID();
           const orderData = orderDetails.data;
-          
+
           let currentOrder = null;
           if (Array.isArray(orderData)) {
             currentOrder = orderData.find(order => order.id === orderId);
           } else {
             currentOrder = orderData;
           }
-  
+
           if (currentOrder && currentOrder.order_status) {
             setOrderStatus(currentOrder.order_status);
           }
@@ -56,13 +56,13 @@ export const CheckoutPage = () => {
         }
       }
     };
-  
+
     // Start polling when order is confirmed
     if (orderStatus !== 'cancelled') {
       const intervalId = setInterval(pollOrderStatus, 10000); // Poll every 10 seconds
       setOrderStatusPolling(intervalId);
     }
-  
+
     return () => {
       if (orderStatusPolling) {
         clearInterval(orderStatusPolling);
@@ -85,25 +85,27 @@ export const CheckoutPage = () => {
               <img
                 src={`/${orderStatus}.gif`}
                 alt={`${orderStatus} status`}
-                className={`w-18 h-18 object-contain `}
+                className="w-18 h-18 object-contain"
               />
             </div>
           )}
           <h3 className="text-xl font-semibold text-orange-500">
             {orderStatus === 'pending' ? 'Order Received' :
-             orderStatus === 'received' ? 'Order Received' :
-             orderStatus === 'preparing' ? 'Preparing Your Order' :
-             orderStatus === 'ready' ? 'Ready to Serve' :
-             orderStatus === 'cancelled' ? 'Order Cancelled' :
-             'Processing Order'}
+              orderStatus === 'received' ? 'Order Received' :
+                orderStatus === 'preparing' ? 'Preparing Your Order' :
+                  orderStatus === 'served' ? 'Order Served' :
+                    orderStatus === 'ready' ? 'Ready to Bill' :
+                      orderStatus === 'cancelled' ? 'Order Cancelled' :
+                        'Processing Order'}
           </h3>
           <p className="text-center text-sm text-gray-600 mt-1">
             {orderStatus === 'pending' ? 'We have received your order!' :
-             orderStatus === 'received' ? 'We have received your order!' :
-             orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
-             orderStatus === 'ready' ? 'Your order is ready to be served!' :
-             orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
-             'Processing your order...'}
+              orderStatus === 'received' ? 'We have received your order!' :
+                orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
+                  orderStatus === 'served' ? 'Enjoy your meal!' :
+                    orderStatus === 'ready' ? 'Your bill is ready' :
+                      orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
+                        'Processing your order...'}
           </p>
         </div>
       </div>
@@ -138,7 +140,7 @@ export const CheckoutPage = () => {
       setTempInstructions(item?.instructions || '')
     }
   }
-  
+
   const updateQuantity = (itemId: string, change: number) => {
     setOrderItems(prev => {
       const updatedItems = prev.map(item => {
@@ -153,8 +155,8 @@ export const CheckoutPage = () => {
   }
 
   const saveInstructions = (itemId: string) => {
-    setOrderItems(prev => prev.map(item => 
-      item.id === itemId 
+    setOrderItems(prev => prev.map(item =>
+      item.id === itemId
         ? { ...item, instructions: tempInstructions }
         : item
     ))
@@ -163,8 +165,8 @@ export const CheckoutPage = () => {
 
   const clearInstructions = (itemId: string) => {
     setTempInstructions('')
-    setOrderItems(prev => prev.map(item => 
-      item.id === itemId 
+    setOrderItems(prev => prev.map(item =>
+      item.id === itemId
         ? { ...item, instructions: '' }
         : item
     ))
@@ -176,7 +178,7 @@ export const CheckoutPage = () => {
   const handleConfirmOrder = async () => {
     try {
       const orderData = {
-        table_id: 'EX02', 
+        table_id: 'EX02',
         booking_id: localStorage.getItem('currentBookingId') || '',
         items: orderItems.map(item => ({
           dish_id: item.id,
@@ -204,17 +206,17 @@ export const CheckoutPage = () => {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gray-50 flex flex-col"
     >
       <div className="flex-1 p-4 space-y-4">
-      {orderStatus && <OrderStatusDisplay />}
+        {orderStatus && <OrderStatusDisplay />}
         <AnimatePresence>
           {orderItems.map((item, index) => (
-            <motion.div 
+            <motion.div
               key={item.id}
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -223,9 +225,9 @@ export const CheckoutPage = () => {
               className="bg-white rounded-3xl p-4"
             >
               <div className="flex gap-4">
-                <img 
-                  src={item.image} 
-                  alt={item.name} 
+                <img
+                  src={item.image}
+                  alt={item.name}
                   className="w-16 h-16 rounded-2xl object-cover"
                 />
                 <div className="flex-1">
@@ -240,25 +242,25 @@ export const CheckoutPage = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <button 
+                  <button
                     className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center text-orange-500"
                     onClick={() => updateQuantity(item.id, -1)}
                   >−</button>
                   <span className="text-lg w-4 text-center">{item.quantity}</span>
-                  <button 
+                  <button
                     className="w-8 h-8 bg-orange-50 rounded-full flex items-center justify-center text-orange-500"
                     onClick={() => updateQuantity(item.id, 1)}
                   >+</button>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 className="mt-3 flex items-center gap-2 text-gray-500 text-sm w-full py-2 px-4 bg-gray-50 rounded-xl"
                 onClick={() => handleInstructionsClick(item.id)}
               >
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                 </svg>
                 {item.instructions || 'Add Custom Instructions'}
               </button>
@@ -273,13 +275,13 @@ export const CheckoutPage = () => {
                     rows={3}
                   />
                   <div className="flex gap-2">
-                    <button 
+                    <button
                       onClick={() => saveInstructions(item.id)}
                       className="flex-1 bg-orange-500 text-white py-2 rounded-xl text-sm font-medium"
                     >
                       Save
                     </button>
-                    <button 
+                    <button
                       onClick={() => clearInstructions(item.id)}
                       className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-xl text-sm font-medium"
                     >
@@ -293,56 +295,56 @@ export const CheckoutPage = () => {
         </AnimatePresence>
 
         <div className="bg-white rounded-3xl p-4">
-            <div 
-              className="flex items-center justify-between cursor-pointer" 
-              onClick={() => setIsExpanded(!isExpanded)}
-            >
-              <div className="flex items-center gap-3">
-                <svg className="text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 10h18M3 14h18M3 18h18M3 6h18"/>
-                </svg>
-                <div>
-                  <div className="text-gray-400">Table</div>
-                  <div className="text-xl font-medium">EX02</div>
-                </div>
-              </div>
+          <div
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <div className="flex items-center gap-3">
+              <svg className="text-gray-400" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 10h18M3 14h18M3 18h18M3 6h18" />
+              </svg>
               <div>
-                <div className="text-gray-500 text-sm">Total Bill</div>
-                <div className="text-xl font-semibold text-orange-500">₹{totalBill}</div>
-                <div className="text-xs text-gray-400">
-                  Incl. of all Taxes and Charges
-                </div>
+                <div className="text-gray-400">Table</div>
+                <div className="text-xl font-medium">EX02</div>
               </div>
-              <button className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M18 15l-6-6-6 6"/>
-                </svg>
-              </button>
             </div>
-
-            {isExpanded && (
-              <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
-                {orderItems.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{item.name}</span>
-                      <span className="text-orange-500">X {item.quantity}</span>
-                    </div>
-                    <span className="text-gray-500">₹{item.price * item.quantity}</span>
-                  </div>
-                ))}
+            <div>
+              <div className="text-gray-500 text-sm">Total Bill</div>
+              <div className="text-xl font-semibold text-orange-500">₹{totalBill}</div>
+              <div className="text-xs text-gray-400">
+                Incl. of all Taxes and Charges
               </div>
-            )}
+            </div>
+            <button className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 15l-6-6-6 6" />
+              </svg>
+            </button>
           </div>
+
+          {isExpanded && (
+            <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+              {orderItems.map((item) => (
+                <div key={item.id} className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{item.name}</span>
+                    <span className="text-orange-500">X {item.quantity}</span>
+                  </div>
+                  <span className="text-gray-500">₹{item.price * item.quantity}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      <motion.div 
+      <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
         className="p-4 space-y-3"
       >
-        <button 
+        <button
           onClick={() => {
             setShowNotification(true)
             setTimeout(() => setShowNotification(false), 3000)
@@ -351,7 +353,7 @@ export const CheckoutPage = () => {
         >
           Request Assistance
         </button>
-        <button 
+        <button
           onClick={handleConfirmOrder}
           className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
         >

@@ -38,7 +38,7 @@ export const OrderConfirmationPage = () => {
           cafeAPI.getOrdersByID(),
           cafeAPI.getDishes()
         ])
-        
+
         if (orderResponse.success && orderResponse.data) {
           const orderData = Array.isArray(orderResponse.data) ? orderResponse.data[0] : orderResponse.data;
           setDishes(dishesResponse);
@@ -58,7 +58,7 @@ export const OrderConfirmationPage = () => {
           });
 
           // Ensure you are accessing the correct property for table number
-          const tableNumber =  'EX02'; // Verify if table_id is correct
+          const tableNumber = 'EX02'; // Verify if table_id is correct
           setOrderItems(mappedOrderItems);
           setTableNumber(tableNumber);
         } else {
@@ -85,13 +85,13 @@ export const OrderConfirmationPage = () => {
     try {
       const tableId = localStorage.getItem('currentTableId') || 'EX02';
       const response = await cafeAPI.requestAssistance(tableId);
-      
+
       if (!response.success) {
         setNotificationMessage(response.data?.message || 'Failed to request assistance');
       } else {
         setNotificationMessage('Your assistance is on the way!');
       }
-      
+
       setShowNotification(true);
       setTimeout(() => {
         setShowNotification(false);
@@ -111,21 +111,23 @@ export const OrderConfirmationPage = () => {
 
 
   // Update the notification toast to use the message
-  {showNotification && (
-    <motion.div
-      initial={{ y: -50, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      exit={{ y: -50, opacity: 0 }}
-      transition={{ duration: 0.3 }}
-      className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
-    >
-      {notificationMessage}
-    </motion.div>
-  )}
+  {
+    showNotification && (
+      <motion.div
+        initial={{ y: -50, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: -50, opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+      >
+        {notificationMessage}
+      </motion.div>
+    )
+  }
   const [isFinished, setIsFinished] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [showRatingDialog, setShowRatingDialog] = useState(false)
-  const [ratings, setRatings] = useState<{[key: string]: number}>({})
+  const [ratings, setRatings] = useState<{ [key: string]: number }>({})
 
   const handleFinishOrder = () => {
     setShowConfirmDialog(true)
@@ -152,7 +154,7 @@ export const OrderConfirmationPage = () => {
         try {
           const orderDetails = await cafeAPI.getOrdersByID();
           const orderData = orderDetails.data;
-          
+
           let currentOrder = null;
           if (Array.isArray(orderData)) {
             currentOrder = orderData.find(order => order.id === orderId);
@@ -209,7 +211,7 @@ export const OrderConfirmationPage = () => {
       }
 
       // Clear local storage
-      // localStorage.clear();
+      localStorage.clear();
 
       setIsFinished(true);
       setShowRatingDialog(false);
@@ -229,44 +231,46 @@ export const OrderConfirmationPage = () => {
     .map(id => orderItems.find(item => item.id === id))
     .filter((item): item is OrderItem => item !== undefined)
 
-    const OrderStatusDisplay = () => (
-      <div className="bg-white rounded-3xl p-6 text-center mb-6">
-        {orderStatus === 'cancelled' ? (
-          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </div>
-        ) : (
-          <div className="w-24 h-24 flex items-center justify-center mx-auto mb-4">
-            <img
-              src={`/${orderStatus}.gif`}
-              alt={`${orderStatus} status`}
-              className={`w-18 h-18 object-contain `}
-            />
-          </div>
-        )}
-        <h2 className="text-2xl font-semibold text-orange-500 mb-2">
-          {orderStatus === 'pending' ? 'Order Received' :
-           orderStatus === 'received' ? 'Order Received' :
-           orderStatus === 'preparing' ? 'Preparing Your Order' :
-           orderStatus === 'ready' ? 'Ready to Serve' :
-           orderStatus === 'cancelled' ? 'Order Cancelled' :
-           'Processing Order'}
-        </h2>
-        <p className="text-gray-600">
-          {orderStatus === 'pending' ? 'We have received your order!' :
-           orderStatus === 'received' ? 'We have received your order!' :
-           orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
-           orderStatus === 'ready' ? 'Your order is ready to be served!' :
-           orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
-           'Processing your order...'}
-        </p>
-      </div>
-    )
+  const OrderStatusDisplay = () => (
+    <div className="flex flex-col items-center">
+      {orderStatus === 'cancelled' ? (
+        <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mb-2">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </div>
+      ) : (
+        <div className="w-24 h-24 flex items-center justify-center mb-2">
+          <img
+            src={`/${orderStatus}.gif`}
+            alt={`${orderStatus} status`}
+            className="w-18 h-18 object-contain"
+          />
+        </div>
+      )}
+      <h3 className="text-xl font-semibold text-orange-500">
+        {orderStatus === 'pending' ? 'Order Received' :
+          orderStatus === 'received' ? 'Order Received' :
+            orderStatus === 'preparing' ? 'Preparing Your Order' :
+              orderStatus === 'served' ? 'Order Served' :
+                orderStatus === 'ready' ? 'Ready to Bill' :
+                  orderStatus === 'cancelled' ? 'Order Cancelled' :
+                    'Processing Order'}
+      </h3>
+      <p className="text-center text-sm text-gray-600 mt-1">
+        {orderStatus === 'pending' ? 'We have received your order!' :
+          orderStatus === 'received' ? 'We have received your order!' :
+            orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
+              orderStatus === 'served' ? 'Enjoy your meal!' :
+                orderStatus === 'ready' ? 'Your bill is ready' :
+                  orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
+                    'Processing your order...'}
+      </p>
+    </div>
+  )
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
@@ -296,7 +300,7 @@ export const OrderConfirmationPage = () => {
 
       <div className="bg-white rounded-3xl p-4">
         <div className="flex items-center mb-2">
-        <img src={tableIcon} alt="Table" className="w-6 h-6 mr-2" />
+          <img src={tableIcon} alt="Table" className="w-6 h-6 mr-2" />
           <h3 className="font-semibold">Table {tableNumber}</h3>
         </div>
         <div className="flex justify-between items-center font-semibold">
@@ -309,32 +313,32 @@ export const OrderConfirmationPage = () => {
       <div className="mt-6 space-y-4">
         {!isFinished ? (
           <>
-            <button 
+            <button
               onClick={handleRequestAssistance}
               className="w-full bg-white border-2 border-orange-500 text-orange-500 py-4 rounded-xl font-semibold text-lg"
             >
               Request Assistance
             </button>
             <div className="flex space-x-4">
-            <button 
-              onClick={() => navigate('/')}
-              className="w-1/2 bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
-            >
-              Order More
-            </button>
-            <button 
-              onClick={handleFinishOrder}
-              className="w-1/2 bg-black text-white py-4 rounded-xl font-semibold text-lg"
-            >
-              Finish Order
-            </button>
-          </div>
+              <button
+                onClick={() => navigate('/')}
+                className="w-1/2 bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
+              >
+                Order More
+              </button>
+              <button
+                onClick={handleFinishOrder}
+                className="w-1/2 bg-black text-white py-4 rounded-xl font-semibold text-lg"
+              >
+                Finish Order
+              </button>
+            </div>
           </>
         ) : (
           <div className="text-center">
             <h2 className="text-2xl font-semibold text-green-600 mb-4">Order Finished</h2>
             <p className="text-gray-600 mb-4">Thank you for dining with us!</p>
-            <button 
+            <button
               onClick={() => navigate('/')}
               className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
             >
@@ -371,7 +375,7 @@ export const OrderConfirmationPage = () => {
       {/* Themed Notification */}
       <AnimatePresence>
         {showNotification && (
-          <motion.div 
+          <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}
@@ -398,9 +402,8 @@ export const OrderConfirmationPage = () => {
                     <button
                       key={star}
                       onClick={() => handleRating(item.id, star)}
-                      className={`text-3xl ${
-                        (ratings[item.id] || 0) >= star ? 'text-yellow-400' : 'text-gray-300'
-                      }`}
+                      className={`text-3xl ${(ratings[item.id] || 0) >= star ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
                     >
                       ★
                     </button>

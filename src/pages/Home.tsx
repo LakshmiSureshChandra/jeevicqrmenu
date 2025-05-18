@@ -415,7 +415,7 @@ export const Home = () => {
                       <img
                         src={`/${orderStatus}.gif`}
                         alt={`${orderStatus} status`}
-                        className={`w-18 h-18 object-contain `}
+                        className="w-18 h-18 object-contain"
                       />
                     </div>
                   )}
@@ -423,17 +423,19 @@ export const Home = () => {
                     {orderStatus === 'pending' ? 'Order Received' :
                       orderStatus === 'received' ? 'Order Received' :
                         orderStatus === 'preparing' ? 'Preparing Your Order' :
-                          orderStatus === 'ready' ? 'Ready to Serve' :
-                            orderStatus === 'cancelled' ? 'Order Cancelled' :
-                              'Processing Order'}
+                          orderStatus === 'served' ? 'Order Served' :
+                            orderStatus === 'ready' ? 'Ready to Bill' :
+                              orderStatus === 'cancelled' ? 'Order Cancelled' :
+                                'Processing Order'}
                   </h3>
                   <p className="text-center text-sm text-gray-600 mt-1">
                     {orderStatus === 'pending' ? 'We have received your order!' :
                       orderStatus === 'received' ? 'We have received your order!' :
                         orderStatus === 'preparing' ? 'Our chefs are preparing your delicious meal!' :
-                          orderStatus === 'ready' ? 'Your order is ready to be served!' :
-                            orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
-                              'Processing your order...'}
+                          orderStatus === 'served' ? 'Enjoy your meal!' :
+                            orderStatus === 'ready' ? 'Your bill is ready' :
+                              orderStatus === 'cancelled' ? 'Your order has been cancelled.' :
+                                'Processing your order...'}
                   </p>
                 </div>
               </div>
