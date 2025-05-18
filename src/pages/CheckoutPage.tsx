@@ -29,9 +29,16 @@ export const CheckoutPage = () => {
   const [showNotification, setShowNotification] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [hasPastOrders, setHasPastOrders] = useState(false);
-  const [notificationMessage,] = useState('Your assistance is on the way!')
+  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
   const { orderStatus, setOrderStatus } = useOrderStatus();
   const [orderStatusPolling, setOrderStatusPolling] = useState<NodeJS.Timeout | null>(null);
+  const [tableNumber, setTableNumber] = useState('')
+  const storedTableId = localStorage.getItem('currentTableId')
+  useEffect(() => {
+    if (storedTableId) {
+      setTableNumber(storedTableId)
+    }
+  }, [])
 
   useEffect(() => {
     const pollOrderStatus = async () => {
@@ -178,7 +185,7 @@ export const CheckoutPage = () => {
   const handleConfirmOrder = async () => {
     try {
       const orderData = {
-        table_id: 'EX02',
+        table_id: tableNumber,
         booking_id: localStorage.getItem('currentBookingId') || '',
         items: orderItems.map(item => ({
           dish_id: item.id,
@@ -202,6 +209,32 @@ export const CheckoutPage = () => {
       console.error('Error creating/updating order:', error);
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
+    }
+  };
+
+  const handleRequestAssistance = async () => {
+    try {
+      const tableId = localStorage.getItem('currentTableId') || '';
+      const response = await cafeAPI.requestAssistance(tableId);
+      if (response.data.success === false) {
+        setNotificationMessage(response.data.message);
+      } else {
+        setNotificationMessage('Your assistance is on the way!');
+      }
+
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+        setNotificationMessage('Your assistance is on the way!');
+      }, 3000);
+    } catch (error) {
+      console.error('Error requesting assistance:', error);
+      setNotificationMessage('Failed to request assistance');
+      setShowNotification(true);
+      setTimeout(() => {
+        setShowNotification(false);
+        setNotificationMessage('Your assistance is on the way!');
+      }, 3000);
     }
   };
 
@@ -305,7 +338,7 @@ export const CheckoutPage = () => {
               </svg>
               <div>
                 <div className="text-gray-400">Table</div>
-                <div className="text-xl font-medium">EX02</div>
+                <div className="text-xl font-medium">{storedTableId}</div>
               </div>
             </div>
             <div>
@@ -345,10 +378,7 @@ export const CheckoutPage = () => {
         className="p-4 space-y-3"
       >
         <button
-          onClick={() => {
-            setShowNotification(true)
-            setTimeout(() => setShowNotification(false), 3000)
-          }}
+          onClick={handleRequestAssistance}
           className="w-full bg-white border-2 border-orange-500 text-orange-500 py-4 rounded-xl font-semibold text-lg"
         >
           Request Assistance
@@ -374,20 +404,20 @@ export const CheckoutPage = () => {
         </button>
       )}
 
-      {/* Themed Notification */}
-      <AnimatePresence>
-        {showNotification && (
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
-          >
-            {notificationMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+       {/* Notification Toast */}
+    <AnimatePresence>
+      {showNotification && (
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -50, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+        >
+          {notificationMessage}
+        </motion.div>
+      )}
+    </AnimatePresence>
     </motion.div>
   )
 }

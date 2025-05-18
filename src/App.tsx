@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useNavigate, useParams } from 'react-router-dom'
 import './styles/global.css'
 import { Home } from './pages/Home'
 import { CategoryPage } from './pages/CategoryPage'
@@ -30,6 +30,21 @@ const ThankYouPage = () => {
       <p className="text-xl text-gray-600 mb-8">We hope you enjoyed your meal!</p>
     </div>
   );
+};
+
+// New TableRedirect component
+const TableRedirect = () => {
+  const { tableId } = useParams();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (tableId) {
+      localStorage.setItem('currentTableId', tableId);
+      navigate('/');
+    }
+  }, [tableId, navigate]);
+
+  return null;
 };
 
 function App() {
@@ -71,6 +86,7 @@ function App() {
             <Route path="/checkout" element={<CheckoutPage />} />
             <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
             <Route path="/thank-you" element={<ThankYouPage />} />
+            <Route path="/book-table/:tableId" element={<TableRedirect />} />
           </Routes>
         </Router>
       </CategoryProvider>

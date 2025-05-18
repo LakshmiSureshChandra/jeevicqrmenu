@@ -41,6 +41,14 @@ export const Home = () => {
   const [banners, setBanners] = useState<BannerItem[]>([])
   const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!');
   const { orderStatus, setOrderStatus } = useOrderStatus();
+  const [tableNumber, setTableNumber] = useState('')
+
+  useEffect(() => {
+    const storedTableId = localStorage.getItem('currentTableId')
+    if (storedTableId) {
+      setTableNumber(storedTableId)
+    }
+  }, [])
 
   // Fetch categories
   useEffect(() => {
@@ -209,7 +217,7 @@ export const Home = () => {
           // No current order found, create a new booking
           const now = new Date();
           const bookingDetails = {
-            table_id: 'EX02', // Replace with actual table id if needed
+            table_id: tableNumber, // Replace with actual table id if needed
             booking_date: now.toISOString(),
             booking_time: now.toISOString(),
             from_time: now.toISOString()
@@ -485,7 +493,7 @@ export const Home = () => {
         <button
           onClick={async () => {
             try {
-              const tableId = localStorage.getItem('currentTableId') || 'EX02';
+              const tableId = localStorage.getItem('currentTableId') || '';
               const response = await cafeAPI.requestAssistance(tableId);
               if (response.data.success === false) {
                 setNotificationMessage(response.data.message); // Use the message from response

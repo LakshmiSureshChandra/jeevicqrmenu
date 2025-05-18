@@ -25,11 +25,13 @@ export const OrderConfirmationPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [, setDishes] = useState<any[]>([])
   const [orderStatusPolling, setOrderStatusPolling] = useState<ReturnType<typeof setInterval> | null>(null)
+  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
         const orderId = localStorage.getItem('currentOrderId')
+        const storedTableId = localStorage.getItem('currentTableId')
         if (!orderId) {
           throw new Error('No order ID found')
         }
@@ -57,10 +59,8 @@ export const OrderConfirmationPage = () => {
             };
           });
 
-          // Ensure you are accessing the correct property for table number
-          const tableNumber = 'EX02'; // Verify if table_id is correct
           setOrderItems(mappedOrderItems);
-          setTableNumber(tableNumber);
+          setTableNumber(storedTableId || ''); // Set the table number from localStorage
         } else {
           throw new Error('Failed to fetch order details');
         }
@@ -77,17 +77,13 @@ export const OrderConfirmationPage = () => {
 
   const totalBill = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
-  // Add this state near other state declarations
-  const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
-
   // Update the handleRequestAssistance function
   const handleRequestAssistance = async () => {
     try {
-      const tableId = localStorage.getItem('currentTableId') || 'EX02';
+      const tableId = localStorage.getItem('currentTableId') || '';
       const response = await cafeAPI.requestAssistance(tableId);
-
-      if (!response.success) {
-        setNotificationMessage(response.data?.message || 'Failed to request assistance');
+      if (response.data.success === false) {
+        setNotificationMessage(response.data.message);
       } else {
         setNotificationMessage('Your assistance is on the way!');
       }
@@ -95,7 +91,7 @@ export const OrderConfirmationPage = () => {
       setShowNotification(true);
       setTimeout(() => {
         setShowNotification(false);
-        setNotificationMessage('Your assistance is on the way!'); // Reset message
+        setNotificationMessage('Your assistance is on the way!');
       }, 3000);
     } catch (error) {
       console.error('Error requesting assistance:', error);
@@ -103,7 +99,7 @@ export const OrderConfirmationPage = () => {
       setShowNotification(true);
       setTimeout(() => {
         setShowNotification(false);
-        setNotificationMessage('Your assistance is on the way!'); // Reset message
+        setNotificationMessage('Your assistance is on the way!');
       }, 3000);
     }
   };
@@ -211,7 +207,7 @@ export const OrderConfirmationPage = () => {
       }
 
       // Clear local storage
-      localStorage.clear();
+      // localStorage.clear();
 
       setIsFinished(true);
       setShowRatingDialog(false);
@@ -352,8 +348,8 @@ export const OrderConfirmationPage = () => {
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl">
-            <h3 className="text-xl font-semibold mb-4">Finish Order?</h3>
-            <p className="mb-6">Are you sure you want to finish this order?</p>
+            <h3 className="text-xl font-semibold mb-4">Finished ordering everything?</h3>
+            <p className="mb-6">Click cancel if you might order more</p>
             <div className="flex justify-end space-x-4">
               <button
                 onClick={cancelFinishOrder}  // This line now uses the new function
@@ -374,18 +370,18 @@ export const OrderConfirmationPage = () => {
 
       {/* Themed Notification */}
       <AnimatePresence>
-        {showNotification && (
-          <motion.div
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -50, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
-          >
-            {isFinished ? "Thank you for your feedback!" : "Your assistance is on the way!"}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {showNotification && (
+        <motion.div
+          initial={{ y: -50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -50, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+        >
+          {notificationMessage}
+        </motion.div>
+      )}
+    </AnimatePresence>
       {/* Rating Dialog */}
       {showRatingDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
