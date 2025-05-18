@@ -328,7 +328,15 @@ export const Home = () => {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-gray-50 pb-24"
     >
-      <div className="mx-4 mt-4">
+      {/* Add logo and header */}
+      <header className="bg-white shadow-md p-4 mb-4">
+        <div className="flex items-center justify-between">
+          <img src="/jeeviclogo.png" alt="Jeevic Logo" className="h-12 w-auto" />
+          <h1 className="text-2xl font-bold text-orange-500">Welcome to Jeevic</h1>
+        </div>
+      </header>
+
+      <div className="mx-4">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -341,7 +349,7 @@ export const Home = () => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="mt-4"
+          className="mt-6"
         >
           <SearchBar />
         </motion.div>
@@ -350,7 +358,9 @@ export const Home = () => {
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.5 }}
+          className="mt-8"
         >
+          <h2 className="text-xl font-semibold mb-4 text-gray-800">Our Categories</h2>
           <CategoryGrid
             categories={categories.map((cat: IDishCategory) => ({
               id: cat.id,
