@@ -50,6 +50,19 @@ export const Home = () => {
     }
   }, [])
 
+  useEffect(() => {
+    const fetchBanners = async () => {
+      try {
+        const data = await cafeAPI.getBanners();
+        setBanners(data);
+      } catch (err) {
+        console.error('Error fetching banners:', err);
+      }
+    };
+
+    fetchBanners();
+  }, []);
+
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
@@ -125,19 +138,6 @@ export const Home = () => {
     setCurrentCategory(categoryId);
     navigate(`/category/${categoryId}`);
   };
-
-  useEffect(() => {
-    const fetchBanners = async () => {
-      try {
-        const data = await cafeAPI.getBanners();
-        setBanners(data);
-      } catch (err) {
-        console.error('Error fetching banners:', err);
-      }
-    };
-
-    fetchBanners();
-  }, []);
 
   // Check for active order
   useEffect(() => {
