@@ -59,7 +59,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             if (bookingResponse.success && bookingResponse.data && bookingResponse.data.id) {
               localStorage.setItem('currentBookingId', bookingResponse.data.id)
             }
-            
+            setShowOTP(false)
             onPhoneSignIn({
               phone: `+91${phoneNumber}`
             })
