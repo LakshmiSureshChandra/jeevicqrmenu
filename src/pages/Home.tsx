@@ -401,20 +401,6 @@ export const Home = () => {
               className="flex items-center bg-white rounded-l-full py-2 pl-3 pr-4 shadow-lg"
             >
               <div className="flex items-center gap-3">
-                <svg
-                  className="w-5 h-5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M15 18L9 12L15 6"
-                    stroke="#FF6B00"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
                 <img
                   src="/orderstatus.png"
                   alt="Order Status"
