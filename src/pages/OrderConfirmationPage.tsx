@@ -201,19 +201,26 @@ export const OrderConfirmationPage = () => {
     try {
       // Push ratings to backend
       await cafeAPI.submitRatings(ratings);
-
+  
       // Create checkout
       const bookingId = localStorage.getItem('currentBookingId');
       if (bookingId) {
         await cafeAPI.createCheckout(bookingId);
       }
-
+  
       setIsFinished(true);
       setShowRatingDialog(false);
       setShowNotification(true);
+  
+      // Clear all localStorage
+      localStorage.clear();
+  
+      // Clear navigation history and redirect
+      window.history.replaceState(null, '', '/thank-you');
       setTimeout(() => {
         setShowNotification(false);
-        navigate('/thank-you', { replace: true });
+        // Force reload to clear any remaining state
+        window.location.href = '/thank-you';
       }, 100);
     } catch (error) {
       console.error('Error submitting ratings:', error);

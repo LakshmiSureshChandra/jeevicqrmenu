@@ -37,9 +37,18 @@ apiClient.interceptors.response.use(
       message: error.message,
       config: error.config
     })
-    if (error.response?.status === 401) {
+    
+    // Only clear token for actual 401 responses, not network errors
+    if (error.response?.status === 401 && error.response?.data?.message === 'Unauthenticated') {
       tokenUtils.removeToken()
     }
+    
+    // Network errors won't have response object
+    if (!error.response) {
+      console.error('Network error occurred, maintaining token');
+      // Optionally retry the request here
+    }
+    
     return Promise.reject(error)
   }
 )
