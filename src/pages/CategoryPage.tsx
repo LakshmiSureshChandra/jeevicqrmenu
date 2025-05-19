@@ -19,6 +19,7 @@ export const CategoryPage = () => {
   const { category } = useParams()
   const navigate = useNavigate()
   const { categories, setCategories } = useCategories()
+  const [isConfirming, setIsConfirming] = useState(false);
 
   // Clear cart items when component mounts
   const [cartItems, setCartItems] = useState<CartItem[]>([])
@@ -120,22 +121,22 @@ export const CategoryPage = () => {
 
         // Fetch all dishes
         const allDishes = await cafeAPI.getDishes();
-        
+
         // Group dishes by category and count them
         const dishCountsByCategory: Record<string, number> = {};
         const dishesByCategory: Record<string, MenuItem[]> = {};
-        
+
         allDishes.forEach((dish: any) => {
           const categoryId = dish.dish_category_id;
-          
+
           // Update counts
           dishCountsByCategory[categoryId] = (dishCountsByCategory[categoryId] || 0) + 1;
-          
+
           // Group dishes
           if (!dishesByCategory[categoryId]) {
             dishesByCategory[categoryId] = [];
           }
-          
+
           dishesByCategory[categoryId].push({
             ...dish,
             rating: 5,
@@ -173,9 +174,9 @@ export const CategoryPage = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50 pb-24 relative"
+      className="min-h-screen white pb-24 relative"
     >
-      <div className="sticky top-0 bg-gray-50 z-10 px-4 py-3">
+      <div className="sticky top-0 bg-white z-10 px-4 py-3">
         <SearchBar
           showFilter={true}
           onSearch={handleSearch}
@@ -194,18 +195,16 @@ export const CategoryPage = () => {
               <button
                 key={cat.id}
                 onClick={() => navigate(`/category/${cat.id}`)}
-                className={`flex items-center gap-2 whitespace-nowrap ${
-                  category === cat.id
+                className={`flex items-center gap-2 whitespace-nowrap ${category === cat.id
                     ? 'text-orange-500 border-b-2 border-orange-500 -mb-[13px] pb-2'
                     : 'text-gray-500'
-                }`}
+                  }`}
               >
                 <span className="text-sm font-medium">{cat.name}</span>
-                <span className={`text-xs ${
-                  category === cat.id
+                <span className={`text-xs ${category === cat.id
                     ? 'text-orange-500'
                     : 'text-gray-400'
-                }`}>
+                  }`}>
                   ({categoryItemCounts[cat.id] || 0})
                 </span>
               </button>
@@ -297,11 +296,31 @@ export const CategoryPage = () => {
               </div>
             </div>
             <button
-              onClick={() => navigate('/checkout', { state: { items: cartItems } })}
-              className="bg-white text-orange-500 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 flex-shrink-0"
+              onClick={async () => {
+                setIsConfirming(true);
+                try {
+                  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+                  navigate('/checkout', { state: { items: cartItems } });
+                } catch (error) {
+                  console.error('Error proceeding to checkout:', error);
+                } finally {
+                  setIsConfirming(false);
+                }
+              }}
+              disabled={isConfirming}
+              className="bg-white text-orange-500 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2 flex-shrink-0 disabled:opacity-75"
             >
-              Proceed to Order
-              <span className="text-xl">→</span>
+              {isConfirming ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></span>
+                  <span>Processing...</span>
+                </>
+              ) : (
+                <>
+                  <span>Proceed to Order</span>
+                  <span className="text-xl">→</span>
+                </>
+              )}
             </button>
           </div>
         </div>

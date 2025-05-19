@@ -21,11 +21,12 @@ export const OrderConfirmationPage = () => {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([])
   const [tableNumber, setTableNumber] = useState('')
   const [showNotification, setShowNotification] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [, setLoading] = useState(true)
+  const [, setError] = useState<string | null>(null)
   const [, setDishes] = useState<any[]>([])
   const [orderStatusPolling, setOrderStatusPolling] = useState<ReturnType<typeof setInterval> | null>(null)
   const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!')
+  const [isSubmittingRatings, setIsSubmittingRatings] = useState(false);
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -196,6 +197,7 @@ export const OrderConfirmationPage = () => {
   }, [showRatingDialog]);
 
   const handleConfirmRatings = async () => {
+    setIsSubmittingRatings(true);
     try {
       // Push ratings to backend
       await cafeAPI.submitRatings(ratings);
@@ -206,19 +208,18 @@ export const OrderConfirmationPage = () => {
         await cafeAPI.createCheckout(bookingId);
       }
 
-      // Clear local storage
-      // localStorage.clear();
-
       setIsFinished(true);
       setShowRatingDialog(false);
       setShowNotification(true);
       setTimeout(() => {
         setShowNotification(false);
-        navigate('/thank-you', { replace: true }); // Using replace to prevent going back
+        navigate('/thank-you', { replace: true });
       }, 100);
     } catch (error) {
       console.error('Error submitting ratings:', error);
       setError('Failed to submit ratings. Please try again.');
+    } finally {
+      setIsSubmittingRatings(false);
     }
   };
 
@@ -370,18 +371,18 @@ export const OrderConfirmationPage = () => {
 
       {/* Themed Notification */}
       <AnimatePresence>
-      {showNotification && (
-        <motion.div
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -50, opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
-        >
-          {notificationMessage}
-        </motion.div>
-      )}
-    </AnimatePresence>
+        {showNotification && (
+          <motion.div
+            initial={{ y: -50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -50, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+          >
+            {notificationMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Rating Dialog */}
       {showRatingDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -409,30 +410,30 @@ export const OrderConfirmationPage = () => {
             ))}
             <button
               onClick={handleConfirmRatings}
-              className="w-full bg-orange-500 text-white py-3 rounded-lg mt-4 font-semibold"
+              disabled={isSubmittingRatings}
+              className="w-full bg-orange-500 text-white py-3 rounded-lg mt-4 font-semibold disabled:bg-orange-300 flex items-center justify-center gap-2"
             >
-              Confirm Ratings
+              {isSubmittingRatings ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                'Confirm Ratings'
+              )}
             </button>
           </div>
         </div>
       )}
     </motion.div>
   )
-
-  if (loading) {
-    return <div>Loading...</div>
-  }
-
-  if (error) {
-    return <div>Error: {error}</div>
-  }
 }
 
 // Add this new component at the end of the file
 export const ThankYouPage = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <h1 className="text-4xl font-bold text-orange-500 mb-4">Thank You for Visiting Jeevic</h1>
+      <h1 className="text-4xl flex-col items-center justify-center font-bold text-orange-500 mb-4">Thank You for Visiting Jeevic</h1>
       <p className="text-xl text-gray-600 mb-8">We hope you enjoyed your meal!</p>
     </div>
   )

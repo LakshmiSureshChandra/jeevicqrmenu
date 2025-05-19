@@ -42,6 +42,7 @@ export const Home = () => {
   const [notificationMessage, setNotificationMessage] = useState('Your assistance is on the way!');
   const { orderStatus, setOrderStatus } = useOrderStatus();
   const [tableNumber, setTableNumber] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const storedTableId = localStorage.getItem('currentTableId')
@@ -145,109 +146,109 @@ export const Home = () => {
     if (dishes.length === 0) return;
 
     const checkAuthAndBooking = async () => {
-        const result = await cafeAPI.checkAuthAndBooking();
-        setIsAuthenticated(result.isAuthenticated);
+      const result = await cafeAPI.checkAuthAndBooking();
+      setIsAuthenticated(result.isAuthenticated);
 
-        const storedBookingId = localStorage.getItem('currentBookingId');
-        const storedOrderId = localStorage.getItem('currentOrderId');
+      const storedBookingId = localStorage.getItem('currentBookingId');
+      const storedOrderId = localStorage.getItem('currentOrderId');
 
-        if (storedBookingId) {
-            try {
-                // Check if the booking is active
-                const bookingStatusResponse = await cafeAPI.checkBookingStatus(storedBookingId);
-                if (bookingStatusResponse.success && bookingStatusResponse.active_booking) {
-                    // Proceed with fetching order details if booking is active
-                    if (storedOrderId) {
-                        const orderDetails = await cafeAPI.getOrdersByID();
-                        const orderData = orderDetails.data;
+      if (storedBookingId) {
+        try {
+          // Check if the booking is active
+          const bookingStatusResponse = await cafeAPI.checkBookingStatus(storedBookingId);
+          if (bookingStatusResponse.success && bookingStatusResponse.active_booking) {
+            // Proceed with fetching order details if booking is active
+            if (storedOrderId) {
+              const orderDetails = await cafeAPI.getOrdersByID();
+              const orderData = orderDetails.data;
 
-                        let currentOrder = null;
-                        if (Array.isArray(orderData)) {
-                            currentOrder = orderData.find((order: any) => order.id === storedOrderId);
-                        } else {
-                            currentOrder = orderData;
-                        }
-                        if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
-                            setHasActiveOrder(true);
-                            setOrderStatus(currentOrder.order_status);
-
-                            setOrderItems(
-                                (currentOrder.items || []).map((item: any) => {
-                                    const dish = dishes.find(d => d.id === item.dish_id);
-
-                                    return {
-                                        id: item.dish_id,
-                                        name: dish ? dish.name : item.dish_id,
-                                        price: dish ? dish.price : 0,
-                                        quantity: item.quantity,
-                                        image: dish ? dish.picture : '',
-                                        instructions: item.instructions || ''
-                                    };
-                                })
-                            );
-
-                            return;
-                        }
-                    }
-                } else {
-                    // Remove booking ID if not active
-                    localStorage.removeItem('currentBookingId');
-                }
-            } catch (error) {
-                console.error('Error checking booking status:', error);
-            }
-        }
-
-        // Fallback to checkAuthAndBooking result (for new/other orders)
-        if (result.orders && result.orders.length > 0) {
-            setHasActiveOrder(true);
-            const allOrderItems = result.orders.flatMap((order: any) =>
-                (order.items || []).map((item: any) => {
-                    const dish = dishes.find(d => d.id === item.dish_id);
-                    return {
-                        id: item.dish_id,
-                        name: dish ? dish.name : item.dish_id,
-                        price: dish ? dish.price : 0,
-                        quantity: item.quantity,
-                        image: dish ? dish.picture : '',
-                        instructions: item.instructions || ''
-                    };
-                })
-            );
-            setOrderItems(allOrderItems);
-        } else {
-            // Check for active order in local storage
-            const currentOrder = localStorage.getItem('currentOrder');
-            if (currentOrder) {
-                const parsedOrder = JSON.parse(currentOrder);
-                setOrderItems(parsedOrder);
+              let currentOrder = null;
+              if (Array.isArray(orderData)) {
+                currentOrder = orderData.find((order: any) => order.id === storedOrderId);
+              } else {
+                currentOrder = orderData;
+              }
+              if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
                 setHasActiveOrder(true);
-            } else {
-                // No current order found, create a new booking
-                const now = new Date();
-                const bookingDetails = {
-                    table_id: tableNumber, // Replace with actual table id if needed
-                    booking_date: now.toISOString(),
-                    booking_time: now.toISOString(),
-                    from_time: now.toISOString()
-                };
-                try {
-                  const newBookingResp = await cafeAPI.createBooking(bookingDetails);
-                  if (newBookingResp.success && newBookingResp.data && newBookingResp.data.id) {
-                      localStorage.setItem('currentBookingId', newBookingResp.data.id);
-                  } else {
-                      console.error('Failed to create booking:', newBookingResp.message || 'Unknown error');
-                  }
-                } catch (err) {
-                    console.error('Error creating new booking:', err);
-                }
-                setHasActiveOrder(false);
+                setOrderStatus(currentOrder.order_status);
+
+                setOrderItems(
+                  (currentOrder.items || []).map((item: any) => {
+                    const dish = dishes.find(d => d.id === item.dish_id);
+
+                    return {
+                      id: item.dish_id,
+                      name: dish ? dish.name : item.dish_id,
+                      price: dish ? dish.price : 0,
+                      quantity: item.quantity,
+                      image: dish ? dish.picture : '',
+                      instructions: item.instructions || ''
+                    };
+                  })
+                );
+
+                return;
+              }
             }
+          } else {
+            // Remove booking ID if not active
+            localStorage.removeItem('currentBookingId');
+          }
+        } catch (error) {
+          console.error('Error checking booking status:', error);
         }
+      }
+
+      // Fallback to checkAuthAndBooking result (for new/other orders)
+      if (result.orders && result.orders.length > 0) {
+        setHasActiveOrder(true);
+        const allOrderItems = result.orders.flatMap((order: any) =>
+          (order.items || []).map((item: any) => {
+            const dish = dishes.find(d => d.id === item.dish_id);
+            return {
+              id: item.dish_id,
+              name: dish ? dish.name : item.dish_id,
+              price: dish ? dish.price : 0,
+              quantity: item.quantity,
+              image: dish ? dish.picture : '',
+              instructions: item.instructions || ''
+            };
+          })
+        );
+        setOrderItems(allOrderItems);
+      } else {
+        // Check for active order in local storage
+        const currentOrder = localStorage.getItem('currentOrder');
+        if (currentOrder) {
+          const parsedOrder = JSON.parse(currentOrder);
+          setOrderItems(parsedOrder);
+          setHasActiveOrder(true);
+        } else {
+          // No current order found, create a new booking
+          const now = new Date();
+          const bookingDetails = {
+            table_id: tableNumber, // Replace with actual table id if needed
+            booking_date: now.toISOString(),
+            booking_time: now.toISOString(),
+            from_time: now.toISOString()
+          };
+          try {
+            const newBookingResp = await cafeAPI.createBooking(bookingDetails);
+            if (newBookingResp.success && newBookingResp.data && newBookingResp.data.id) {
+              localStorage.setItem('currentBookingId', newBookingResp.data.id);
+            } else {
+              console.error('Failed to create booking:', newBookingResp.message || 'Unknown error');
+            }
+          } catch (err) {
+            console.error('Error creating new booking:', err);
+          }
+          setHasActiveOrder(false);
+        }
+      }
     };
 
     checkAuthAndBooking();
-}, [dishes]); // <-- run when dishes are loaded
+  }, [dishes]); // <-- run when dishes are loaded
 
   const handleFinishOrder = () => {
     navigate('order-confirmation')
@@ -332,18 +333,21 @@ export const Home = () => {
     fetchOrderDetails()
   }, [])
 
+  const filteredCategories = categories.filter(category =>
+    category.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="min-h-screen bg-gray-50 pb-24"
+      className="min-h-screen bg-white pb-24"
     >
       {/* Add logo and header */}
-      <header className="bg-white shadow-md p-4 mb-4">
-        <div className="flex items-center justify-between">
+      <header className="bg-white p-4 mb-4">
+        <div className="flex items-center justify-center">
           <img src="/jeeviclogo.png" alt="Jeevic Logo" className="h-12 w-auto" />
-          <h1 className="text-2xl font-bold text-orange-500">Welcome to Jeevic</h1>
         </div>
       </header>
 
@@ -362,7 +366,10 @@ export const Home = () => {
           transition={{ delay: 0.4, duration: 0.5 }}
           className="mt-6"
         >
-          <SearchBar />
+          <SearchBar
+            onSearch={(query) => setSearchQuery(query)}
+            showFilter={false}
+          />
         </motion.div>
 
         <motion.div
@@ -373,7 +380,7 @@ export const Home = () => {
         >
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Our Categories</h2>
           <CategoryGrid
-            categories={categories.map((cat: IDishCategory) => ({
+            categories={filteredCategories.map((cat: IDishCategory) => ({
               id: cat.id,
               name: cat.name,
               image: cat.picture
