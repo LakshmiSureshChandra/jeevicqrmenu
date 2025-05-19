@@ -3,7 +3,7 @@ import { tokenUtils } from '../utils/token'
 import { IDish } from './types' 
 import { IDineInOrders } from './types';
 
-const BASE_URL = 'http://localhost:4545'
+const BASE_URL = 'https://api.jeevic.com'
 let lastCheckTime: { [key: string]: number } = {};
 const CHECK_INTERVAL = 10000;
 
