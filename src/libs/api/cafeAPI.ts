@@ -4,6 +4,8 @@ import { IDish } from './types'
 import { IDineInOrders } from './types';
 
 const BASE_URL = 'http://localhost:4545'
+let lastCheckTime: { [key: string]: number } = {};
+const CHECK_INTERVAL = 10000;
 
 // Create axios instance with default config
 const apiClient = axios.create({
@@ -186,16 +188,22 @@ export const cafeAPI = {
     from_time: string;
   }) => {
     try {
+      // Add a lock mechanism using localStorage
+      const isCreatingBooking = localStorage.getItem('isCreatingBooking');
+      if (isCreatingBooking === 'true') {
+        return { success: false, message: 'Booking creation in progress', data: null };
+      }
+      
+      localStorage.setItem('isCreatingBooking', 'true');
+      
       const currentBookingId = localStorage.getItem('currentBookingId');
       
       if (currentBookingId) {
-          // Check if the current booking is active
           const bookingStatusResponse = await cafeAPI.checkBookingStatus(currentBookingId);
           if (bookingStatusResponse.success && bookingStatusResponse.active_booking) {
-              // If the booking is active, do not create a new booking
+              localStorage.removeItem('isCreatingBooking');
               return { success: true, message: 'Booking is still active', data: null };
           } else {
-              // If the booking is not active, remove it from local storage
               localStorage.removeItem('currentBookingId');
           }
       }
@@ -207,8 +215,10 @@ export const cafeAPI = {
 
       const { data } = await apiClient.post('/dine-in/bookings', bookingDetails);
       localStorage.setItem("currentBookingId", data.data.id);
+      localStorage.removeItem('isCreatingBooking');
       return { success: true, data };
     } catch (error) {
+      localStorage.removeItem('isCreatingBooking');
       if (axios.isAxiosError(error)) {
         throw new Error(error.response?.data?.message || 'Failed to create booking');
       }
@@ -373,14 +383,19 @@ export const cafeAPI = {
   },
   checkBookingStatus: async (bookingId: string) => {
     try {
-      
-        // const response = await axios.get(`${API_BASE_URL}/check-booking/${bookingId}`);
+        // Check if we've queried this booking recently
+        const now = Date.now();
+        if (lastCheckTime[bookingId] && (now - lastCheckTime[bookingId] < CHECK_INTERVAL)) {
+            return { success: true, active_booking: true }; // Return cached result
+        }
+
         const response = await apiClient.get(`/dine-in/check-booking/${bookingId}`);
+        lastCheckTime[bookingId] = now; // Update last check time
         return response.data;
     } catch (error) {
         console.error('Error checking booking status:', error);
         throw error;
     }
-},
+}
 }
 
