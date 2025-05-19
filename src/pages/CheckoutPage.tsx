@@ -34,6 +34,7 @@ export const CheckoutPage = () => {
   const [orderStatusPolling, setOrderStatusPolling] = useState<NodeJS.Timeout | null>(null);
   const [tableNumber, setTableNumber] = useState('')
   const storedTableId = localStorage.getItem('currentTableId')
+  const [isConfirming, setIsConfirming] = useState(false)
   useEffect(() => {
     if (storedTableId) {
       setTableNumber(storedTableId)
@@ -142,6 +143,7 @@ export const CheckoutPage = () => {
 
   const handleConfirmOrder = async () => {
     try {
+      setIsConfirming(true)
       const orderData = {
         table_id: tableNumber,
         booking_id: localStorage.getItem('currentBookingId') || '',
@@ -151,9 +153,8 @@ export const CheckoutPage = () => {
           instructions: item.instructions
         }))
       };
-
+  
       const response = await cafeAPI.createOrder(orderData);
-      console.log('Order response:', response); // Log the response for debugging purposes
       if (response.success) {
         if (!localStorage.getItem('currentOrderId')) {
           localStorage.setItem('currentOrderId', response.data.data.id);
@@ -167,6 +168,8 @@ export const CheckoutPage = () => {
       console.error('Error creating/updating order:', error);
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
+    } finally {
+      setIsConfirming(false)
     }
   };
 
@@ -341,11 +344,38 @@ export const CheckoutPage = () => {
           Request Assistance
         </button>
         <button
-          onClick={handleConfirmOrder}
-          className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg"
-        >
-          Confirm Order
-        </button>
+  onClick={handleConfirmOrder}
+  disabled={isConfirming}
+  className="w-full bg-orange-500 text-white py-4 rounded-xl font-semibold text-lg disabled:opacity-70"
+>
+  {isConfirming ? (
+    <div className="flex items-center justify-center gap-2">
+      <svg 
+        className="animate-spin h-5 w-5 text-white" 
+        xmlns="http://www.w3.org/2000/svg" 
+        fill="none" 
+        viewBox="0 0 24 24"
+      >
+        <circle 
+          className="opacity-25" 
+          cx="12" 
+          cy="12" 
+          r="10" 
+          stroke="currentColor" 
+          strokeWidth="4"
+        />
+        <path 
+          className="opacity-75" 
+          fill="currentColor" 
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+      <span>Confirming Order...</span>
+    </div>
+  ) : (
+    'Confirm Order'
+  )}
+</button>
       </motion.div>
 
       {/* Side button for past orders */}
