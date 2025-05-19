@@ -186,19 +186,33 @@ export const cafeAPI = {
     from_time: string;
   }) => {
     try {
-      const token = tokenUtils.getToken()
-      if (token) {
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      const currentBookingId = localStorage.getItem('currentBookingId');
+      
+      if (currentBookingId) {
+          // Check if the current booking is active
+          const bookingStatusResponse = await cafeAPI.checkBookingStatus(currentBookingId);
+          if (bookingStatusResponse.success && bookingStatusResponse.active_booking) {
+              // If the booking is active, do not create a new booking
+              return { success: true, message: 'Booking is still active', data: null };
+          } else {
+              // If the booking is not active, remove it from local storage
+              localStorage.removeItem('currentBookingId');
+          }
       }
 
-      const { data } = await apiClient.post('/dine-in/bookings', bookingDetails)
-      localStorage.setItem("currentBookingId",data.data.id)
-      return data
+      const token = tokenUtils.getToken();
+      if (token) {
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      }
+
+      const { data } = await apiClient.post('/dine-in/bookings', bookingDetails);
+      localStorage.setItem("currentBookingId", data.data.id);
+      return { success: true, data };
     } catch (error) {
       if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.message || 'Failed to create booking')
+        throw new Error(error.response?.data?.message || 'Failed to create booking');
       }
-      throw error
+      throw error;
     }
   },
 
@@ -247,34 +261,38 @@ export const cafeAPI = {
     shouldProceed: boolean;
     orders?: IDineInOrders[];
   }> => {
-    const isAuthenticated = tokenUtils.isTokenValid()
+    const isAuthenticated = tokenUtils.isTokenValid();
     if (!isAuthenticated) {
-      return { isAuthenticated: false, shouldProceed: true }
+        return { isAuthenticated: false, shouldProceed: true };
     }
 
-    const bookingId = localStorage.getItem('bookingId')
+    const bookingId = localStorage.getItem('currentBookingId'); // Ensure correct key is used
     if (!bookingId) {
-      return { isAuthenticated: true, shouldProceed: true }
+        return { isAuthenticated: true, shouldProceed: true };
     }
 
     try {
-      const bookingResponse = await apiClient.get(`/dine-in/bookings/${bookingId}`)
-      const bookingData = bookingResponse.data
+        // Check if the booking is active
+        const bookingStatusResponse = await cafeAPI.checkBookingStatus(bookingId);
+        if (!bookingStatusResponse.success || !bookingStatusResponse.active_booking) {
+            // If booking is not active, allow proceeding and remove booking ID
+            localStorage.removeItem('currentBookingId');
+            return { isAuthenticated: true, shouldProceed: true };
+        }
 
-      if (bookingData.is_cancelled || bookingData.is_completed) {
-        return { isAuthenticated: true, shouldProceed: true }
-      }
+        const orderId = localStorage.getItem('currentOrderId');
+        if (orderId) {
+            const ordersResponse = await apiClient.get(`/dine-in/orders/${orderId}`);
+            const ordersData = ordersResponse.data;
+            return { isAuthenticated: true, shouldProceed: false, orders: ordersData };
+        }
 
-      const orderId = localStorage.getItem('currentOrderId')
-      const ordersResponse = await apiClient.get(`/dine-in/orders/${orderId}`)
-      const ordersData = ordersResponse.data
-
-      return { isAuthenticated: true, shouldProceed: false, orders: ordersData }
+        return { isAuthenticated: true, shouldProceed: false };
     } catch (error) {
-      console.error('Error checking booking status:', error)
-      return { isAuthenticated: true, shouldProceed: true }
+        console.error('Error checking booking status:', error);
+        return { isAuthenticated: true, shouldProceed: true };
     }
-  },
+},
 
   getBookingById: async (): Promise<{ success: boolean; data: IDineInOrders[] }> => {
     try {
@@ -353,5 +371,16 @@ export const cafeAPI = {
       return { success: false, data: null };
     }
   },
+  checkBookingStatus: async (bookingId: string) => {
+    try {
+      
+        // const response = await axios.get(`${API_BASE_URL}/check-booking/${bookingId}`);
+        const response = await apiClient.get(`/dine-in/check-booking/${bookingId}`);
+        return response.data;
+    } catch (error) {
+        console.error('Error checking booking status:', error);
+        throw error;
+    }
+},
 }
 

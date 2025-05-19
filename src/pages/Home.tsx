@@ -145,98 +145,109 @@ export const Home = () => {
     if (dishes.length === 0) return;
 
     const checkAuthAndBooking = async () => {
-      const result = await cafeAPI.checkAuthAndBooking();
-      setIsAuthenticated(result.isAuthenticated);
+        const result = await cafeAPI.checkAuthAndBooking();
+        setIsAuthenticated(result.isAuthenticated);
 
-      const storedBookingId = localStorage.getItem('currentBookingId');
-      const storedOrderId = localStorage.getItem('currentOrderId');
+        const storedBookingId = localStorage.getItem('currentBookingId');
+        const storedOrderId = localStorage.getItem('currentOrderId');
 
-      if (storedOrderId && storedBookingId) {
-        try {
-          const orderDetails = await cafeAPI.getOrdersByID();
-          const orderData = orderDetails.data;
+        if (storedBookingId) {
+            try {
+                // Check if the booking is active
+                const bookingStatusResponse = await cafeAPI.checkBookingStatus(storedBookingId);
+                if (bookingStatusResponse.success && bookingStatusResponse.active_booking) {
+                    // Proceed with fetching order details if booking is active
+                    if (storedOrderId) {
+                        const orderDetails = await cafeAPI.getOrdersByID();
+                        const orderData = orderDetails.data;
 
-          let currentOrder = null;
-          if (Array.isArray(orderData)) {
-            currentOrder = orderData.find((order: any) => order.id === storedOrderId);
-          } else {
-            currentOrder = orderData;
-          }
-          if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
-            setHasActiveOrder(true);
-            setOrderStatus(currentOrder.order_status);
+                        let currentOrder = null;
+                        if (Array.isArray(orderData)) {
+                            currentOrder = orderData.find((order: any) => order.id === storedOrderId);
+                        } else {
+                            currentOrder = orderData;
+                        }
+                        if (orderDetails.success && currentOrder && currentOrder.id === storedOrderId) {
+                            setHasActiveOrder(true);
+                            setOrderStatus(currentOrder.order_status);
 
+                            setOrderItems(
+                                (currentOrder.items || []).map((item: any) => {
+                                    const dish = dishes.find(d => d.id === item.dish_id);
 
-            setOrderItems(
-              (currentOrder.items || []).map((item: any) => {
-                const dish = dishes.find(d => d.id === item.dish_id);
+                                    return {
+                                        id: item.dish_id,
+                                        name: dish ? dish.name : item.dish_id,
+                                        price: dish ? dish.price : 0,
+                                        quantity: item.quantity,
+                                        image: dish ? dish.picture : '',
+                                        instructions: item.instructions || ''
+                                    };
+                                })
+                            );
 
-                return {
-                  id: item.dish_id,
-                  name: dish ? dish.name : item.dish_id,
-                  price: dish ? dish.price : 0,
-                  quantity: item.quantity,
-                  image: dish ? dish.picture : '',
-                  instructions: item.instructions || ''
-                };
-              })
-            );
-
-            return;
-          }
-        } catch (error) {
-          console.error('Error fetching order details:', error);
-        }
-      }
-
-      // Fallback to checkAuthAndBooking result (for new/other orders)
-      if (result.orders && result.orders.length > 0) {
-        setHasActiveOrder(true);
-        const allOrderItems = result.orders.flatMap((order: any) =>
-          (order.items || []).map((item: any) => {
-            const dish = dishes.find(d => d.id === item.dish_id);
-            return {
-              id: item.dish_id,
-              name: dish ? dish.name : item.dish_id,
-              price: dish ? dish.price : 0,
-              quantity: item.quantity,
-              image: dish ? dish.picture : '',
-              instructions: item.instructions || ''
-            };
-          })
-        );
-        setOrderItems(allOrderItems);
-      } else {
-        // Check for active order in local storage
-        const currentOrder = localStorage.getItem('currentOrder');
-        if (currentOrder) {
-          const parsedOrder = JSON.parse(currentOrder);
-          setOrderItems(parsedOrder);
-          setHasActiveOrder(true);
-        } else {
-          // No current order found, create a new booking
-          const now = new Date();
-          const bookingDetails = {
-            table_id: tableNumber, // Replace with actual table id if needed
-            booking_date: now.toISOString(),
-            booking_time: now.toISOString(),
-            from_time: now.toISOString()
-          };
-          try {
-            const newBookingResp = await cafeAPI.createBooking(bookingDetails);
-            if (newBookingResp && newBookingResp.id) {
-              localStorage.setItem('currentBookingId', newBookingResp.id);
+                            return;
+                        }
+                    }
+                } else {
+                    // Remove booking ID if not active
+                    localStorage.removeItem('currentBookingId');
+                }
+            } catch (error) {
+                console.error('Error checking booking status:', error);
             }
-          } catch (err) {
-            console.error('Error creating new booking:', err);
-          }
-          setHasActiveOrder(false);
         }
-      }
+
+        // Fallback to checkAuthAndBooking result (for new/other orders)
+        if (result.orders && result.orders.length > 0) {
+            setHasActiveOrder(true);
+            const allOrderItems = result.orders.flatMap((order: any) =>
+                (order.items || []).map((item: any) => {
+                    const dish = dishes.find(d => d.id === item.dish_id);
+                    return {
+                        id: item.dish_id,
+                        name: dish ? dish.name : item.dish_id,
+                        price: dish ? dish.price : 0,
+                        quantity: item.quantity,
+                        image: dish ? dish.picture : '',
+                        instructions: item.instructions || ''
+                    };
+                })
+            );
+            setOrderItems(allOrderItems);
+        } else {
+            // Check for active order in local storage
+            const currentOrder = localStorage.getItem('currentOrder');
+            if (currentOrder) {
+                const parsedOrder = JSON.parse(currentOrder);
+                setOrderItems(parsedOrder);
+                setHasActiveOrder(true);
+            } else {
+                // No current order found, create a new booking
+                const now = new Date();
+                const bookingDetails = {
+                    table_id: tableNumber, // Replace with actual table id if needed
+                    booking_date: now.toISOString(),
+                    booking_time: now.toISOString(),
+                    from_time: now.toISOString()
+                };
+                try {
+                  const newBookingResp = await cafeAPI.createBooking(bookingDetails);
+                  if (newBookingResp.success && newBookingResp.data && newBookingResp.data.id) {
+                      localStorage.setItem('currentBookingId', newBookingResp.data.id);
+                  } else {
+                      console.error('Failed to create booking:', newBookingResp.message || 'Unknown error');
+                  }
+                } catch (err) {
+                    console.error('Error creating new booking:', err);
+                }
+                setHasActiveOrder(false);
+            }
+        }
     };
 
     checkAuthAndBooking();
-  }, [dishes]); // <-- run when dishes are loaded
+}, [dishes]); // <-- run when dishes are loaded
 
   const handleFinishOrder = () => {
     navigate('order-confirmation')
