@@ -143,7 +143,7 @@ export const CheckoutPage = () => {
 
   const handleConfirmOrder = async () => {
     try {
-      setIsConfirming(true)
+      setIsConfirming(true);
       const orderData = {
         table_id: tableNumber,
         booking_id: localStorage.getItem('currentBookingId') || '',
@@ -156,20 +156,24 @@ export const CheckoutPage = () => {
   
       const response = await cafeAPI.createOrder(orderData);
       if (response.success) {
-        if (!localStorage.getItem('currentOrderId')) {
+        // Store the new order ID if it's a new order
+        if (response.data?.data?.id) {
           localStorage.setItem('currentOrderId', response.data.data.id);
         }
         setOrderStatus('received');
         navigate('/order-confirmation', { state: { orderItems } });
       } else {
-        throw new Error('Failed to create/update order');
+        setNotificationMessage('Failed to create order');
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 3000);
       }
     } catch (error) {
       console.error('Error creating/updating order:', error);
+      setNotificationMessage('Failed to create order');
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 3000);
     } finally {
-      setIsConfirming(false)
+      setIsConfirming(false);
     }
   };
 

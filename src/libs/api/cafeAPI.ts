@@ -238,26 +238,32 @@ export const cafeAPI = {
   createOrder: async (orderData: CreateOrderData): Promise<{ success: boolean; data: any }> => {
     try {
       const currentOrderId = localStorage.getItem('currentOrderId');
-      const url = currentOrderId
-        ? `${BASE_URL}/dine-in/orders/${currentOrderId}`
-        : `${BASE_URL}/dine-in/orders`;
-      const method = currentOrderId ? 'PATCH' : 'POST';
-
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${tokenUtils.getToken()}`,
-        },
-        body: JSON.stringify(currentOrderId ? { items: orderData.items } : orderData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      
+      // First, try to get the order if we have an ID
+      if (currentOrderId) {
+        try {
+          const orderCheck = await apiClient.get(`/dine-in/orders/${currentOrderId}`);
+          if (orderCheck.data && orderCheck.data.success) {
+            // Order exists, update it
+            const response = await apiClient.patch(`/dine-in/orders/${currentOrderId}`, {
+              items: orderData.items
+            });
+            return { success: true, data: response.data };
+          }
+        } catch (error) {
+          // Order not found or other error, remove the invalid order ID
+          localStorage.removeItem('currentOrderId');
+        }
       }
-
-      const data = await response.json();
-      return { success: true, data };
+  
+      // If we reach here, either there was no order ID or the order wasn't found
+      // Create a new order
+      const response = await apiClient.post('/dine-in/orders', orderData);
+      if (response.data && response.data.data && response.data.data.id) {
+        localStorage.setItem('currentOrderId', response.data.data.id);
+      }
+      return { success: true, data: response.data };
+  
     } catch (error) {
       console.error('Error creating/updating order:', error);
       return { success: false, data: null };
