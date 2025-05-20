@@ -147,28 +147,36 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-
-      <div className="relative bg-white rounded-2xl w-[90%] max-w-md p-6 space-y-6">
-        <div className="space-y-4">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+  
+      <div className="relative bg-white rounded-2xl w-[90%] max-w-md p-8 space-y-6 shadow-xl">
+        <div className="text-center mb-6">
+          <img src="/jeeviclogo.png" alt="Jeevic" className="h-16 mx-auto mb-4" />
+          <h2 className="text-2xl font-semibold text-gray-800">
+            {!showOTP ? 'Welcome to Jeevic' : 'Verify Your Number'}
+          </h2>
+        </div>
+  
+        <div className="space-y-6">
           {!showOTP ? (
-            <div className="flex items-center border rounded-xl p-3 gap-2">
-              <span className="text-gray-600">+91</span>
+            <div className="flex items-center border-2 rounded-xl p-4 gap-3 focus-within:border-orange-500 transition-colors">
+              <span className="text-gray-600 font-medium text-lg">+91</span>
               <input
                 type="tel"
                 placeholder="Enter phone number"
-                className="flex-1 outline-none"
+                className="flex-1 outline-none text-lg"
                 value={phoneNumber}
                 onChange={(e) => setPhoneNumber(e.target.value)}
                 maxLength={10}
               />
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <p className="text-center text-gray-600">
-                Enter the 6-digit code sent to +91 {phoneNumber}
+                Enter the 6-digit code sent to<br />
+                <span className="font-medium text-gray-800">+91 {phoneNumber}</span>
               </p>
-              <div className="flex justify-center gap-2">
+              <div className="flex justify-center gap-3">
                 {otp.map((digit, index) => (
                   <input
                     key={index}
@@ -178,34 +186,27 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                     value={digit}
                     onChange={(e) => handleOTPChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
-                    className="w-10 h-12 text-center border rounded-xl outline-none text-lg" // Adjusted width for 6 digits
+                    className="w-12 h-14 text-center border-2 rounded-xl outline-none text-xl font-semibold focus:border-orange-500 transition-colors"
                   />
                 ))}
               </div>
-              <div className="text-center">
+              <div className="text-center mt-6">
                 {timer > 0 ? (
-                  <p className="text-sm text-gray-500">Resend OTP in {timer}s</p>
+                  <p className="text-sm text-gray-500">Resend code in {timer}s</p>
                 ) : (
                   <button
                     onClick={handleResendOTP}
-                    className="text-sm text-orange-500 font-medium"
+                    className="text-orange-500 font-medium hover:text-orange-600 transition-colors"
                   >
-                    Resend OTP
+                    Resend Code
                   </button>
                 )}
               </div>
             </div>
           )}
-
-          {/* <p className="text-[12px] text-center text-gray-500">
-            By clicking continue you agree to our{' '}
-            <a href="#" className="text-orange-500">
-              Terms & Conditions
-            </a>
-          </p> */}
-
-<button
-            className="w-full bg-orange-500 text-white py-3 rounded-xl font-medium disabled:opacity-70 relative"
+  
+          <button
+            className="w-full bg-orange-500 text-white py-4 rounded-xl font-medium disabled:opacity-70 relative hover:bg-orange-600 transition-colors text-lg shadow-lg shadow-orange-500/30"
             onClick={handleContinue}
             disabled={isLoading}
           >
@@ -234,11 +235,18 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
                 <span>{showOTP ? 'Verifying...' : 'Sending OTP...'}</span>
               </div>
             ) : (
-              <span>{showOTP ? 'Confirm' : 'Continue'}</span>
+              <span>{showOTP ? 'Verify' : 'Continue'}</span>
             )}
           </button>
+  
+          {/* <p className="text-xs text-center text-gray-500 mt-4">
+            By continuing, you agree to our{' '}
+            <a href="#" className="text-orange-500 hover:underline">
+              Terms & Conditions
+            </a>
+          </p> */}
         </div>
       </div>
     </div>
-  )
+  );
 }

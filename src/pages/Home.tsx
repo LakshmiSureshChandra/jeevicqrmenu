@@ -383,7 +383,8 @@ export const Home = () => {
             categories={filteredCategories.map((cat: IDishCategory) => ({
               id: cat.id,
               name: cat.name,
-              image: cat.picture
+              image: cat.picture,
+              is_available: true
             }))}
             onCategoryClick={handleCategoryClick}
           />

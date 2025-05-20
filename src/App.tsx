@@ -25,9 +25,31 @@ const ThankYouPage = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-      <h1 className="text-4xl font-bold text-orange-500 mb-4">Thank You for Visiting Jeevic</h1>
-      <p className="text-xl text-gray-600 mb-8">We hope you enjoyed your meal!</p>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-orange-50 to-white p-6">
+      <div className="text-center space-y-6 max-w-md">
+        <div className="mb-8">
+          <img 
+            src="/jeeviclogo.png" 
+            alt="Jeevic Logo" 
+            className="w-auto h-32 mx-auto"
+          />
+        </div>
+        <h1 className="text-4xl font-bold text-orange-500 mb-4">
+          Thank You for Dining with Us!
+        </h1>
+        <p className="text-xl text-gray-600 mb-4">
+          We hope you enjoyed your meal at Jeevic
+        </p>
+        <p className="text-gray-500 italic">
+          "Good food is the foundation of genuine happiness"
+        </p>
+        <button 
+          onClick={() => window.location.href = 'https://jeevic.com'}
+          className="mt-8 bg-orange-500 text-white px-8 py-3 rounded-full font-medium hover:bg-orange-600 transition-all transform hover:scale-105"
+        >
+          Visit Our Website
+        </button>
+      </div>
     </div>
   );
 };

@@ -118,25 +118,28 @@ export const CategoryPage = () => {
           }));
           setCategories(formattedCategories);
         }
-
+  
         // Fetch all dishes
         const allDishes = await cafeAPI.getDishes();
-
+  
         // Group dishes by category and count them
         const dishCountsByCategory: Record<string, number> = {};
         const dishesByCategory: Record<string, MenuItem[]> = {};
-
+  
         allDishes.forEach((dish: any) => {
+          // Skip unavailable dishes
+          if (!dish.is_available) return;
+  
           const categoryId = dish.dish_category_id;
-
+  
           // Update counts
           dishCountsByCategory[categoryId] = (dishCountsByCategory[categoryId] || 0) + 1;
-
+  
           // Group dishes
           if (!dishesByCategory[categoryId]) {
             dishesByCategory[categoryId] = [];
           }
-
+  
           dishesByCategory[categoryId].push({
             ...dish,
             rating: 5,
@@ -144,22 +147,22 @@ export const CategoryPage = () => {
             category: dish.dish_category_id
           });
         });
-
+  
         // Update category counts
         setCategoryItemCounts(dishCountsByCategory);
-
+  
         // If we're on a specific category page, set its dishes
         if (category && dishesByCategory[category]) {
           setMenuItems(dishesByCategory[category]);
         }
-
+  
         setLoading(false);
       } catch (err) {
         console.error('Error fetching data:', err);
         setLoading(false);
       }
     };
-
+  
     fetchAllData();
   }, [category, categories.length, setCategories]);
 
