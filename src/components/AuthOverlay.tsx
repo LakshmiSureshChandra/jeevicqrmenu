@@ -48,7 +48,7 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             const now = new Date()
             const formattedDate = now.toISOString().split('T')[0]
             const formattedTime = now.toISOString().slice(0, 19)
-
+  
             const bookingResponse = await cafeAPI.createBooking({
               ...bookingDetails,
               booking_date: formattedDate,
@@ -59,13 +59,14 @@ export const AuthOverlay: FC<AuthOverlayProps> = ({
             if (bookingResponse.success && bookingResponse.data && bookingResponse.data.id) {
               localStorage.setItem('currentBookingId', bookingResponse.data.id)
             }
-            setShowOTP(false)
-            onPhoneSignIn({
-              phone: `+91${phoneNumber}`
-            })
           } catch (bookingError) {
             console.error('Failed to create booking:', bookingError)
           }
+          // Move these outside the try-catch to ensure they run regardless of booking success/failure
+          setShowOTP(false)
+          onPhoneSignIn({
+            phone: `+91${phoneNumber}`
+          })
         }
       }
     } catch (error) {
